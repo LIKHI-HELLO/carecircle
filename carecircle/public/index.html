@@ -1,0 +1,52 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CareCircle – medication care, together</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef4f1;--ink:#12302b;--card:#fff;--brand:#0b6e4f;--warn:#b3261e;--soft:#ffe9a8;--line:#c6d8d0}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1f1b;--ink:#eaf4ef;--card:#17302a;--brand:#5fd3a6;--warn:#ff8a80;--soft:#4a3d12;--line:#2c4a42}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:400 20px/1.5 'Atkinson Hyperlegible',system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:20px}h1{font-size:2rem;margin:.2em 0}h2{font-size:1.5rem;margin:1.2em 0 .4em}
+.card{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:16px;margin:12px 0}
+button,input,select{font:inherit;color:inherit;border-radius:10px;border:2px solid var(--line);padding:12px 14px;background:var(--card);min-height:48px}
+button{background:var(--brand);color:var(--card);border-color:var(--brand);font-weight:700;cursor:pointer}button.alt{background:none;color:var(--ink);border-color:var(--line)}
+:focus-visible{outline:4px solid var(--warn);outline-offset:2px}
+label{display:block;margin:.6em 0 .2em;font-weight:700}input{width:100%}
+.dose{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.dose big{font-size:1.6rem;font-weight:700}.dose.done{opacity:.6}.dose.missed{border-color:var(--warn);background:var(--soft)}
+.take{font-size:1.5rem;padding:16px 28px}.err{color:var(--warn);font-weight:700}.tag{background:var(--soft);padding:2px 10px;border-radius:99px;font-size:.9rem}
+.bars{display:flex;gap:6px;align-items:flex-end;height:90px}.bars div{flex:1;background:var(--brand);border-radius:6px 6px 0 0;min-height:4px}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1 1 140px}nav{display:flex;gap:8px;flex-wrap:wrap}
+</style></head><body><main id="app"></main>
+<script>
+let tok=localStorage.cc_tok||'',D=null,msg='';
+const $=s=>document.querySelector(s),app=$('#app');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function api(p,m='GET',b){const r=await fetch('/api/'+p,{method:m,headers:{'content-type':'application/json','x-token':tok},body:b?JSON.stringify(b):undefined});const j=await r.json();if(!r.ok)throw new Error(j.error||'Something went wrong.');return j}
+async function run(f){try{msg='';await f()}catch(e){msg=e.message;if(/sign in/i.test(msg)){tok='';D=null}}render()}
+const val=id=>document.getElementById(id).value;
+function loginView(){return `<h1>CareCircle</h1><p>One shared care plan. The elder always has the final say.</p>
+<div class="card"><h2>Join a care circle</h2><label for="c">Care code</label><input id="c" autocomplete="off">
+<label for="p">Passcode</label><input id="p" type="password"><label for="w">Your name</label><input id="w">
+<label for="r">I am the</label><select id="r"><option value="elder">Elder</option><option value="caretaker">Caretaker</option><option value="family">Family member</option></select><p></p>
+<button onclick="run(async()=>{const j=await api('login','POST',{code:val('c'),passcode:val('p'),who:val('w'),role:val('r')});tok=j.token;localStorage.cc_tok=tok;D=await api('data')})">Sign in</button></div>
+<div class="card"><h2>Start a new care circle</h2><label for="n">Elder's name</label><input id="n"><label for="e">Email for reminders</label><input id="e" type="email">
+<label for="q">Choose a passcode (4+ characters)</label><input id="q" type="password"><p></p>
+<button class="alt" onclick="run(async()=>{const j=await api('profiles','POST',{name:val('n'),email:val('e'),passcode:val('q')});msg='Your care code is '+j.code+'. Share it with family, then sign in.'})">Create care circle</button></div>`}
+function dash(){const d=D,el=d.role==='elder',pend=d.meds.filter(m=>m.status==='pending');
+return `<h1>Hello, ${esc(d.name)}</h1><nav><span class="tag">Signed in as ${d.role}</span><button class="alt" onclick="tok='';localStorage.cc_tok='';D=null;render()">Sign out</button></nav>
+<h2>Today</h2>${d.today.length?d.today.map(x=>`<div class="card dose ${x.taken?'done':x.missed?'missed':''}"><div><big>${x.time} · ${esc(x.name)}</big><br>${esc(x.dose)} ${x.missed&&!x.taken?'<b class="err">Missed – family will be told</b>':''}</div>
+${x.taken?'<b>Taken ✓</b>':`<button class="take" onclick="run(async()=>{D=await api('take','POST',{id:'${x.id}',time:'${x.time}'})})">I took it</button>`}</div>`).join(''):'<div class="card">No doses today. Add a medicine below.</div>'}
+${pend.length?`<h2>Waiting for the elder's approval</h2>${pend.map(m=>`<div class="card dose"><div>${esc(m.name)} ${esc(m.dose)} at ${m.times.join(', ')}<br>Added by ${esc(m.by)}</div>${el?`<button onclick="run(async()=>{D=await api('meds/${m.id}/approve','POST')})">Approve</button>`:''}<button class="alt" onclick="run(async()=>{D=await api('meds/${m.id}/delete','POST')})">Remove</button></div>`).join('')}`:''}
+<h2>This week</h2><div class="card"><div class="bars" role="img" aria-label="Doses taken per day, last 7 days">${d.trend.map(t=>`<div title="${t.date}: ${t.pct??'-'}%" style="height:${t.pct??4}%"></div>`).join('')}</div>
+<p>Last 7 days taken: ${d.trend.reduce((a,t)=>a+t.taken,0)} of ${d.trend.reduce((a,t)=>a+t.total,0)}</p></div>
+<h2>Medicines</h2>${d.meds.filter(m=>m.status==='active').map(m=>`<div class="card dose"><div>${esc(m.name)} ${esc(m.dose)}<br>${m.times.join(', ')}</div>${el?`<button class="alt" onclick="run(async()=>{D=await api('meds/${m.id}/delete','POST')})">Remove</button>`:''}</div>`).join('')}
+<div class="card"><label for="mn">Medicine</label><input id="mn"><div class="row"><div><label for="md">Dose</label><input id="md" placeholder="500 mg"></div><div><label for="mt">Times (comma separated)</label><input id="mt" placeholder="08:00, 20:00"></div></div><p></p>
+<button onclick="run(async()=>{D=await api('meds','POST',{name:val('mn'),dose:val('md'),times:val('mt').split(',').map(s=>s.trim())})})">${el?'Add medicine':'Suggest medicine to the elder'}</button></div>
+<h2>Doctor appointments</h2>${d.appts.map(a=>`<div class="card dose"><div><b>${esc(a.title)}</b><br>${esc(a.when.replace('T',' '))} ${esc(a.place)}</div><button class="alt" onclick="run(async()=>{D=await api('appts/${a.id}','DELETE')})">Remove</button></div>`).join('')}
+<div class="card"><label for="at">Visit</label><input id="at"><div class="row"><div><label for="aw">Date and time</label><input id="aw" type="datetime-local"></div><div><label for="ap">Place</label><input id="ap"></div></div><p></p>
+<button onclick="run(async()=>{D=await api('appts','POST',{title:val('at'),when:val('aw'),place:val('ap')})})">Add appointment</button></div>
+<h2>Who gets reminder emails</h2><div class="card"><p>${d.emails.map(esc).join(', ')||'No one yet.'}</p><label for="ce">Add an email</label><input id="ce" type="email"><p></p>
+<button class="alt" onclick="run(async()=>{D=await api('contacts','POST',{email:val('ce')})})">Add email</button></div>`}
+function render(){app.innerHTML=(msg?`<p class="err" role="alert">${esc(msg)}</p>`:'')+(D?dash():loginView())}
+(async()=>{if(tok)try{D=await api('data')}catch{tok=''}render();setInterval(()=>{if(D)api('data').then(x=>{D=x;if(!document.activeElement||document.activeElement.tagName==='BODY')render()}).catch(()=>{})},60000)})();
+</script></body></html>
