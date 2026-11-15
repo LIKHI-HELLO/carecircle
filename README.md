@@ -1,30 +1,39 @@
-# CareSync AI — Senior-First Elderly Care & Medication Management Platform
+# CareSync AI — Senior-First Elderly Care & Medication Management
 
-> **Built for the Catalyst | Solo AI Hackathon (PromptWars × Makers Need More)**
+> A front-end hackathon prototype for medication tracking, caregiver collaboration, accessibility, and appointment visibility.
 
-🔗 **Live Prototype:** [https://nimble-mousse-04e6c5.netlify.app](https://nimble-mousse-04e6c5.netlify.app)  
-🔑 **Demo Passcode (Caregiver Portal):** `123456`
+**Live prototype:** https://nimble-mousse-04e6c5.netlify.app
 
----
+## What works in this prototype
 
-## 💡 Overview
-**CareSync AI** bridges the critical gap between elder independence and family peace of mind. Rather than treating older adults as passive recipients of clinical alerts, CareSync AI puts the senior in absolute control of their care plan through a voice-enabled multilingual interface, while keeping their Care Circle informed automatically.
+- Senior-friendly medication schedule with taken/pending status.
+- Caregiver demo PIN gate (`123456`) and senior-controlled approval of proposed care-plan items.
+- Medication status, caregiver proposals, activity log, and doctor appointments persist in the same browser using `localStorage`.
+- Add doctor appointments with doctor, date, time, and clinic details; appointments appear in the senior view.
+- English, Hindi, and Telugu interface text plus browser text-to-speech controls.
+- Local demo escalation and SOS event logging.
+- Basic automated tests for medication status, approval workflow, appointment creation, persistence, safe toast rendering, and demo-notification disclosures.
 
----
+## Important prototype limitations
 
-## 🚀 Key Features Built
+This is **not a production healthcare system** and must not be used to store real patient data or make clinical decisions.
 
-* **Elder Stays in Control (Human-in-the-Loop Approval):** New medications or schedule adjustments proposed by family members or caregivers remain `Pending` until explicitly reviewed and approved by the senior on their screen, preserving their full autonomy.
-* **Multilingual Suite & Audio Controls:** Instant language switching across **English, Hindi, and Telugu**, paired with built-in text-to-speech voice readouts and volume/mute controls for accessibility.
-* **Senior-First Accessible UI:** High-contrast color palette, large typography, oversized touch targets, and zero screen clutter designed specifically for elderly users.
-* **Proactive Missed-Dose Escalation & Audit Logs:** Real-time synchronization between the Senior View and Caregiver Command Center, automatically notifying family members if a scheduled dose goes unconfirmed.
-* **Drug-Food Interaction Guard & AI Helper:** Instant safety checks between prescriptions and foods/supplements, alongside plain-language medical note translation.
-* **Emergency SOS System:** One-tap emergency dispatch simulation alerting designated family contacts and doctors instantly.
+- The demo PIN is hardcoded in client-side JavaScript. It is a demonstration gate, **not secure authentication**.
+- `localStorage` is browser/device-local. It does not provide server-side storage, encrypted medical records, or multi-user synchronization.
+- No email, SMS, push notification, emergency-service call, or automatic background reminder is configured. SOS and missed-dose actions are recorded locally for demonstration only.
+- The medication guidance is general demonstration text, not medical advice. Users should follow their prescription and consult a qualified healthcare professional.
+- Appointment entries are local demo records; no email appointment reminders are sent.
 
----
+## Run locally
 
-## 🛠️ Tech Stack & Architecture
+Requires Node.js 18 or newer for tests.
 
-* **Frontend:** HTML5, Tailwind CSS (Responsive High-Contrast UI), Vanilla JavaScript
-* **Accessibility & Voice:** Web Speech API (`speechSynthesis`) for multilingual voice readouts
-* **Deployment & Hosting:** Netlify (Continuous Live Deployment)
+```bash
+npm test
+```
+
+Open `index.html` in a browser or deploy the repository as a static site on Netlify.
+
+## Security headers
+
+Netlify response headers are configured in `netlify.toml` for frame protection, content-type sniffing protection, referrer policy, permissions policy, and HTTPS transport security.
