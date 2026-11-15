@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareSync AI — Senior-First Elderly Care & Medication Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col selection:bg-teal-500 selection:text-white">
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- HEADER / NAVIGATION -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
+                    🛡️
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">CareSync <span class="text-teal-600">AI</span></h1>
+                    <p class="text-xs font-medium text-slate-500" id="header-subtitle">Connected Care & Intelligent Autonomy</p>
+                </div>
+            </div>
+
+            <!-- VIEW TOGGLES & RESET -->
+            <div class="flex items-center space-x-2">
+                <button onclick="switchView('senior')" id="btn-senior" class="px-4 py-2 rounded-xl text-sm font-bold bg-teal-600 text-white shadow-sm transition-all">
+                    👵 <span id="nav-senior-text">Senior View (Easy Mode)</span>
+                </button>
+                <button onclick="switchView('caregiver')" id="btn-caregiver" class="px-4 py-2 rounded-xl text-sm font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all">
+                    👨‍👩‍👧 <span id="nav-caregiver-text">Caregiver Portal</span>
+                </button>
+                <button onclick="resetDemoData()" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all text-xs font-semibold" title="Reset Demo Data">
+                    🔄 Reset
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MULTILINGUAL & VOICE CONTROL BAR -->
+    <section class="bg-slate-900 text-white py-2.5 px-4 shadow-inner">
+        <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3 text-sm">
+            <div class="flex items-center space-x-2">
+                <span class="text-xs uppercase tracking-wider text-teal-400 font-bold">🌐 Language:</span>
+                <button onclick="setLanguage('en')" id="lang-en" class="px-2.5 py-1 rounded bg-teal-600 font-bold text-xs">English</button>
+                <button onclick="setLanguage('hi')" id="lang-hi" class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs">हिंदी</button>
+                <button onclick="setLanguage('te')" id="lang-te" class="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs">తెలుగు</button>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs text-slate-400 font-medium">🔊 Volume:</span>
+                    <input type="range" id="speech-volume" min="0" max="1" step="0.1" value="1" class="w-20 accent-teal-500 cursor-pointer">
+                </div>
+                <button onclick="toggleMute()" id="mute-btn" class="px-3 py-1 rounded bg-slate-800 text-xs font-bold hover:bg-slate-700 transition-all border border-slate-700">
+                    🔊 Sound On
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="max-w-6xl mx-auto px-4 py-6 flex-grow w-full">
+
+        <!-- ================= SENIOR VIEW (EASY MODE) ================= -->
+        <div id="view-senior" class="space-y-6">
+            
+            <!-- Welcome Card & Quick Readout -->
+            <div class="bg-gradient-to-r from-teal-700 to-emerald-800 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 text-9クト opacity-10">💊</div>
+                <div class="relative z-10 max-w-2xl">
+                    <span class="bg-teal-500/30 text-teal-100 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-teal-400/30" id="badge-mode">Senior Easy Mode</span>
+                    <h2 class="text-2xl sm:text-4xl font-extrabold mt-3 tracking-tight" id="senior-greeting">Namaste, Mrs. Kamala Devi 🙏</h2>
+                    <p class="text-teal-100 text-sm sm:text-base mt-2 leading-relaxed" id="senior-subtitle">You have 2 medications remaining today. Your daughter Likitha checked in earlier!</p>
+                    
+                    <div class="flex flex-wrap gap-3 mt-6">
+                        <button onclick="readTodaysPlan()" class="bg-white text-teal-900 font-bold px-5 py-3 rounded-2xl shadow-lg hover:bg-teal-50 transition-all flex items-center space-x-2 transform active:scale-95">
+                            <span>📢</span> <span id="btn-read-plan">Read Today's Plan Aloud</span>
+                        </button>
+                        <button onclick="triggerEmergencySOS()" class="bg-rose-600 text-white font-bold px-5 py-3 rounded-2xl shadow-lg hover:bg-rose-700 transition-all flex items-center space-x-2 transform active:scale-95 border border-rose-500">
+                            <span>🚨</span> <span id="btn-sos">Emergency SOS</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PENDING APPROVAL ALERT (Human-in-the-Loop) -->
+            <div id="senior-approval-banner" class="hidden bg-amber-50 border-2 border-amber-300 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-start space-x-3">
+                    <span class="text-3xl">⚠️</span>
+                    <div>
+                        <h3 class="font-bold text-amber-900 text-base" id="approval-title">Caregiver Proposed Change Requires Your Approval</h3>
+                        <p class="text-amber-800 text-sm mt-0.5" id="approval-desc">Likitha (Daughter) proposed: <strong id="approval-item-text">Add Evening Walk at 6:00 PM</strong></p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2 w-full sm:w-auto">
+                    <button onclick="approveCaregiverChange(true)" class="flex-1 sm:flex-none bg-emerald-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow hover:bg-emerald-700 transition" id="btn-approve">Approve</button>
+                    <button onclick="approveCaregiverChange(false)" class="flex-1 sm:flex-none bg-slate-200 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-sm hover:bg-slate-300 transition" id="btn-reject">Decline</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left 2 Cols: Today's Schedule -->
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xl font-bold text-slate-900 flex items-center space-x-2">
+                            <span>📋</span> <span id="heading-schedule">Today's Medication Schedule</span>
+                        </h3>
+                        <span class="text-xs font-bold text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-xs" id="schedule-date">Nov 15, 2026</span>
+                    </div>
+
+                    <div id="medication-list" class="space-y-3">
+                        <!-- Injected via JavaScript -->
+                    </div>
+                <section class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm mb-6" aria-labelledby="appointments-heading">
+                    <h3 id="appointments-heading" class="text-lg font-bold text-slate-900 mb-3">🩺 Upcoming Doctor Appointments</h3>
+                    <div id="appointment-list" class="space-y-2" aria-live="polite"></div>
+                    <p class="text-xs text-slate-500 mt-2">Sample appointments are stored only in this browser demo. No email reminder is sent.</p>
+                </section>
+
+                </div>
+
+                <!-- Right Col: AI Helper & Emergency Contacts -->
+                <div class="space-y-6">
+                    <!-- Ask CareSync AI Helper -->
+                    <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm">
+                        <div class="flex items-center space-x-2 text-teal-600 font-bold mb-3">
+                            <span>🤖</span> <span id="heading-ai-helper">CareSync Quick Guidance</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-2" id="ai-helper-desc">Choose a common question in English, Hindi, or Telugu.</p>
+                        <p class="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2 mb-4">Prewritten demo guidance only—not a medical professional or a substitute for prescription instructions.</p>
+                        
+                        <div class="space-y-2 mb-4">
+                            <button onclick="askAI('Can I take Metformin with milk?')" class="w-full text-left text-xs bg-slate-50 hover:bg-teal-50 hover:text-teal-800 text-slate-700 p-2.5 rounded-xl border border-slate-200 font-medium transition flex items-center justify-between">
+                                <span>💊 Can I take Metformin with milk?</span> <span>→</span>
+                            </button>
+                            <button onclick="askAI('What if I miss my afternoon dose?')" class="w-full text-left text-xs bg-slate-50 hover:bg-teal-50 hover:text-teal-800 text-slate-700 p-2.5 rounded-xl border border-slate-200 font-medium transition flex items-center justify-between">
+                                <span>⏰ What if I miss my afternoon dose?</span> <span>→</span>
+                            </button>
+                            <button onclick="askAI('Is dizziness normal after BP medicine?')" class="w-full text-left text-xs bg-slate-50 hover:bg-teal-50 hover:text-teal-800 text-slate-700 p-2.5 rounded-xl border border-slate-200 font-medium transition flex items-center justify-between">
+                                <span>🩺 Is dizziness normal after BP medicine?</span> <span>→</span>
+                            </button>
+                        </div>
+
+                        <div id="ai-response-box" class="hidden bg-teal-50 border border-teal-200 rounded-2xl p-4 text-xs text-teal-900 space-y-2">
+                            <p class="font-bold flex items-center justify-between">
+                                <span>CareSync AI Guidance:</span>
+                                <button onclick="speakText(document.getElementById('ai-response-text').innerText)" class="text-teal-700 hover:text-teal-900">🔊 Listen</button>
+                            </p>
+                            <p id="ai-response-text" class="leading-relaxed"></p>
+                        </div>
+                    </div>
+
+                    <!-- Care Circle Summary Card -->
+                    <div class="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-bold text-slate-900 text-sm" id="heading-care-circle">My Care Circle</h4>
+                            <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">Active</span>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex items-center space-x-3 p-2 rounded-xl bg-slate-50 border border-slate-100">
+                                <div class="w-9 h-9 rounded-full bg-teal-100 text-teal-700 font-bold flex items-center justify-center text-sm">L</div>
+                                <div class="flex-grow">
+                                    <p class="text-xs font-bold text-slate-800">Likitha (Daughter)</p>
+                                    <p class="text-[10px] text-slate-500" id="role-primary-caregiver">Primary Caregiver • Connected</p>
+                                </div>
+                                <span class="text-xs text-emerald-600 font-bold">Online</span>
+                            </div>
+                            <div class="flex items-center space-x-3 p-2 rounded-xl bg-slate-50 border border-slate-100">
+                                <div class="w-9 h-9 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-sm">DR</div>
+                                <div class="flex-grow">
+                                    <p class="text-xs font-bold text-slate-800">Dr. Rajesh Sharma</p>
+                                    <p class="text-[10px] text-slate-500" id="role-cardiologist">Cardiologist • City Hospital</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= CAREGIVER PORTAL ================= -->
+        <div id="view-caregiver" class="hidden space-y-6">
+            
+            <!-- Auth Screen (Passcode) -->
+            <div id="caregiver-auth-box" class="max-w-md mx-auto bg-white rounded-3xl p-8 border border-slate-200 shadow-xl text-center space-y-6 mt-10">
+                <div class="w-16 h-16 bg-teal-100 text-teal-700 rounded-2xl flex items-center justify-center text-3xl mx-auto shadow-inner">
+                    🔐
+                </div>
+                <div>
+                    <h3 class="text-2xl font-extrabold text-slate-900">Family & Caretaker Access</h3>
+                    <p class="text-xs text-slate-500 mt-2">Enter the 6-digit demo PIN to view sample data. This browser-only demo gate is not production authentication and must not protect real medical information.</p>
+                </div>
+
+                <!-- One-Click Demo Passcode Autofill -->
+                <div class="bg-teal-50 border border-teal-200 rounded-2xl p-3 text-left">
+                    <p class="text-[11px] font-bold text-teal-800 uppercase tracking-wide">💡 Demo access (not secure authentication):</p>
+                    <button onclick="autofillPasscode()" class="mt-1 w-full text-left text-xs bg-white hover:bg-teal-100 text-teal-900 font-bold p-2 rounded-xl border border-teal-300 transition flex items-center justify-between shadow-xs">
+                        <span>Autofill demo PIN: 123456</span>
+                        <span>✨</span>
+                    </button>
+                </div>
+
+                <div class="space-y-3">
+                    <input type="password" id="passcode-input" maxlength="6" inputmode="numeric" autocomplete="one-time-code" aria-label="Six-digit demo PIN" placeholder="Enter 6-digit PIN" class="w-full text-center tracking-widest text-2xl font-bold py-3 bg-slate-50 border border-slate-300 rounded-2xl focus:outline-none focus:border-teal-600 focus:bg-white transition-all">
+                    <button onclick="verifyPasscode()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-3.5 rounded-2xl shadow-lg transition-all transform active:scale-95">
+                        Unlock Caregiver Dashboard
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dashboard Screen (Unlocked) -->
+            <div id="caregiver-dashboard" class="hidden space-y-6">
+                
+                <!-- Caregiver Header Bar -->
+                <div class="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <span class="bg-teal-500/20 text-teal-400 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-teal-500/30">Caregiver Control Center</span>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold mt-2 tracking-tight">Managing: Mrs. Kamala Devi (Age 74)</h2>
+                        <p class="text-slate-400 text-xs sm:text-sm mt-1">Real-time adherence monitoring, missed-dose escalation, and care plan modifications.</p>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button onclick="simulateMissedDoseAlert()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow transition flex items-center space-x-1.5">
+                            <span>⚡</span> <span>Simulate Missed-Dose Alert</span>
+                        </button>
+                        <button onclick="lockCaregiverPortal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-4 py-2.5 rounded-xl border border-slate-700 transition">
+                            🔒 Lock Portal
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Adherence & Activity Metrics Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl font-bold">94%</div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-medium">7-Day Adherence Rate</p>
+                            <p class="text-sm font-extrabold text-slate-900 mt-0.5">Excellent Compliance</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center text-xl font-bold">2/3</div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-medium">Today's Medications</p>
+                            <p class="text-sm font-extrabold text-slate-900 mt-0.5" id="metric-meds-status">1 Dose Remaining</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-xl font-bold">0</div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-medium">Critical Escalations</p>
+                            <p class="text-sm font-extrabold text-slate-900 mt-0.5">Zero Incidents Today</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Propose Care Plan Modification Card -->
+                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-slate-900 text-base flex items-center space-x-2">
+                            <span>✏️</span> <span>Propose New Care Plan Item (Human-in-the-Loop)</span>
+                        </h3>
+                        <span class="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full font-medium">Requires Senior Approval</span>
+                    </div>
+                    <p class="text-xs text-slate-600">Adding medications or schedule changes will require Mrs. Kamala Devi to review and approve them on her screen, preserving her complete autonomy.</p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <input type="text" id="new-med-name" aria-label="Medication or activity name" placeholder="Medication or Activity Name (e.g., Vitamin D3)" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-teal-600 font-medium">
+                        <input type="text" id="new-med-time" aria-label="Medication or activity time" placeholder="Time (e.g., 2:00 PM)" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-teal-600 font-medium">
+                        <button onclick="proposeCaregiverChange()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs py-3 rounded-xl shadow transition">
+                            Propose to Senior
+                        </button>
+                    </div>
+                </div>
+
+                <section class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4" aria-labelledby="appointment-form-heading">
+                    <h3 id="appointment-form-heading" class="font-bold text-slate-900 text-base">🩺 Add Doctor Appointment</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <input id="appointment-doctor" type="text" aria-label="Doctor name" placeholder="Doctor name" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                        <input id="appointment-date" type="date" aria-label="Appointment date" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                        <input id="appointment-time" type="time" aria-label="Appointment time" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                        <input id="appointment-location" type="text" aria-label="Hospital or clinic" placeholder="Hospital / clinic" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                    </div>
+                    <p class="text-xs text-slate-500">Saved locally in this browser; email reminders are not configured.</p>
+                    <button onclick="addAppointment()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-5 py-3 rounded-xl">Add appointment</button>
+                </section>
+
+                <!-- Live Activity Feed / Adherence Log -->
+                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-bold text-slate-900 text-base flex items-center space-x-2">
+                        <span>📊</span> <span>Live Care Activity & Adherence Log</span>
+                    </h3>
+                    <div id="caregiver-log-list" class="space-y-3">
+                        <!-- Injected via JavaScript -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- EMERGENCY SOS MODAL -->
+    <div id="sos-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-xs hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 text-center space-y-6 shadow-2xl border-4 border-rose-500 animate-bounce-short">
+            <div class="w-20 h-20 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center text-4xl mx-auto shadow-inner">
+                🚨
+            </div>
+            <div>
+                <h3 class="text-2xl font-extrabold text-slate-900">EMERGENCY SOS ACTIVATED</h3>
+                <p class="text-xs text-slate-600 mt-2">Demo only: this screen does not call emergency services or send SMS/push notifications. Use your local emergency number for real emergencies.</p>
+            </div>
+            <div class="bg-rose-50 border border-rose-200 rounded-2xl p-4">
+                <p class="text-xs font-bold text-rose-800">Demo alert confirmation in <span id="sos-countdown" class="text-lg">5</span> seconds...</p>
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="cancelSOS()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 rounded-xl text-xs transition">
+                    Cancel False Alarm
+                </button>
+                <button onclick="confirmSOSCall()" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl text-xs shadow transition">
+                    Call Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200 mt-auto py-6">
+        <div class="max-w-6xl mx-auto px-4 text-center text-xs text-slate-500 space-y-1">
+            <p class="font-bold text-slate-700">CareSync AI — Built for Catalyst | Solo AI Hackathon (PromptWars × Makers Need More)</p>
+            <p>Live Prototype: <a href="https://nimble-mousse-04e6c5.netlify.app" target="_blank" rel="noopener noreferrer" class="text-teal-600 underline font-semibold">CareSync AI on Netlify</a> • Sample data is stored only in this browser.</p>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // --- TRANSLATION DICTIONARY ---
+        const translations = {
+            en: {
+                subtitle: "Connected Care & Intelligent Autonomy",
+                seniorText: "Senior View (Easy Mode)",
+                caregiverText: "Caregiver Portal",
+                modeBadge: "Senior Easy Mode",
+                greeting: "Namaste, Mrs. Kamala Devi 🙏",
+                seniorSub: "You have 2 medications remaining today. Your daughter Likitha checked in earlier!",
+                readPlan: "Read Today's Plan Aloud",
+                sosBtn: "Emergency SOS",
+                scheduleHeading: "Today's Medication Schedule",
+                aiHelperHeading: "CareSync Quick Guidance",
+                aiHelperDesc: "Tap a question below or ask anything about your meds in English, Hindi, or Telugu:",
+                careCircleHeading: "My Care Circle",
+                primaryCaregiver: "Primary Caregiver • Connected",
+                cardiologist: "Cardiologist • City Hospital"
+            },
+            hi: {
+                subtitle: "कनेक्टेड देखभाल और बुद्धिमान स्वायत्तता",
+                seniorText: "सीनियर व्यू (आसान मोड)",
+                caregiverText: "देखभाल करने वाला पोर्टल",
+                modeBadge: "सीनियर आसान मोड",
+                greeting: "नमस्ते, श्रीमती कमला देवी 🙏",
+                seniorSub: "आज आपकी 2 दवाइयाँ बाकी हैं। आपकी बेटी लिखिता ने पहले चेक-इन किया था!",
+                readPlan: "आज की योजना जोर से सुनें",
+                sosBtn: "आपातकालीन SOS",
+                scheduleHeading: "आज की दवाइयों की अनुसूची",
+                aiHelperHeading: "केयरसिंक AI सहायक से पूछें",
+                aiHelperDesc: "नीचे दिए गए प्रश्न पर टैप करें या अपनी दवाइयों के बारे में पूछें:",
+                careCircleHeading: "मेरा देखभाल घेरा",
+                primaryCaregiver: "प्राथमिक देखभालकर्ता • कनेक्टेड",
+                cardiologist: "हार्ट स्पेशलिस्ट • सिटी अस्पताल"
+            },
+            te: {
+                subtitle: "కనెక్టెడ్ కేర్ & ఇంటెలిజెంట్ ఆటోonomy",
+                seniorText: "సీనియర్ వ్యూ (సులభమైన మోడ్)",
+                caregiverText: "కేర్‌గైవర్ పోర్టల్",
+                modeBadge: "సీనియర్ ఈజీ మోడ్",
+                greeting: "నమస్తే, శ్రీమతి కమలా దేవి 🙏",
+                seniorSub: "ఈరోజు మీకు 2 మందులు మిగిలి ఉన్నాయి. మీ కుమార్తె లిఖిత తనిఖీ చేశారు!",
+                readPlan: "ఈరోజు ప్రణాళిక బిగ్గరగా చదవండి",
+                sosBtn: "అత్యవసర SOS",
+                scheduleHeading: "ఈరోజు మందుల పట్టిక",
+                aiHelperHeading: "కేర్‌సిక్ AI సహాయకుడిని అడగండి",
+                aiHelperDesc: "కింది ప్రశ్నపై నొక్కండి లేదా మీ మందుల గురించి అడగండి:",
+                careCircleHeading: "నా కేర్ సర్కిల్",
+                primaryCaregiver: "ప్రధాన సంరక్షకుడు • కనెక్ట్ చేయబడింది",
+                cardiologist: "కార్డియాలజిస్ట్ • సిటీ హాస్పిటల్"
+            }
+        };
+
+        let currentLang = 'en';
+        let isMuted = false;
+        let sosTimer = null;
+
+        // --- MOCK STATE ---
+        let state = {
+            medications: [
+                { id: 1, name: "Metformin 500mg", time: "8:00 AM", status: "taken", food: "Take with breakfast" },
+                { id: 2, name: "Telmisartan 40mg (BP)", time: "1:00 PM", status: "pending", food: "Take before lunch" },
+                { id: 3, name: "Atorvastatin 10mg", time: "8:00 PM", status: "pending", food: "Take at bedtime" }
+            ],
+            pendingChange: null, // e.g. { text: "Add Evening Walk at 6:00 PM" }
+            appointments: [{ id: 1, doctor: "Dr. Rajesh Sharma", date: "2026-11-19", time: "10:30", location: "City Hospital" }],
+            logs: [
+                { time: "8:05 AM", text: "Metformin 500mg confirmed taken by Mrs. Kamala Devi" },
+                { time: "Yesterday", text: "Dr. Rajesh Sharma updated BP dosage securely" }
+            ]
+        };
+
+        // Demo-only persistence: data stays in this browser and is NOT shared or secure cloud storage.
+        const STORAGE_KEY = 'caresync-demo-state-v1';
+        function persistDemoState() {
+            try {
+                if (window.localStorage) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            } catch (error) {
+                console.warn('Demo state could not be saved in this browser.', error);
+            }
+        }
+        function restoreDemoState() {
+            try {
+                const saved = window.localStorage && window.localStorage.getItem(STORAGE_KEY);
+                if (!saved) return;
+                const parsed = JSON.parse(saved);
+                if (parsed && Array.isArray(parsed.medications) && Array.isArray(parsed.logs)) {
+                    state.medications = parsed.medications;
+                    state.logs = parsed.logs;
+                    state.pendingChange = parsed.pendingChange || null;
+                    if (Array.isArray(parsed.appointments)) state.appointments = parsed.appointments;
+                }
+            } catch (error) {
+                console.warn('Saved demo data was invalid; using the sample data.', error);
+            }
+        }
+        function escapeHTML(value) {
+            return String(value ?? '').replace(/[&<>\"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#39;'
+            }[char]));
+        }
+
+        // --- INITIALIZATION ---
+        window.addEventListener('DOMContentLoaded', () => {
+            restoreDemoState();
+            renderSeniorUI();
+            renderCaregiverUI();
+        });
+
+        // --- TOAST NOTIFICATION SYSTEM ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto px-4 py-3 rounded-2xl shadow-lg text-xs font-bold text-white transition-all transform translate-y-2 opacity-0 flex items-center space-x-2 ${
+                type === 'success' ? 'bg-emerald-600' : type === 'warning' ? 'bg-amber-600' : 'bg-rose-600'
+            }`;
+            const icon = document.createElement('span');
+            icon.textContent = type === 'success' ? '✅' : type === 'warning' ? '⚠️' : '🚨';
+            const content = document.createElement('span');
+            content.textContent = String(message);
+            toast.appendChild(icon);
+            toast.appendChild(content);
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 50);
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // --- VIEW SWITCHING ---
+        function switchView(view) {
+            const seniorView = document.getElementById('view-senior');
+            const caregiverView = document.getElementById('view-caregiver');
+            const btnSenior = document.getElementById('btn-senior');
+            const btnCaregiver = document.getElementById('btn-caregiver');
+
+            if (view === 'senior') {
+                seniorView.classList.remove('hidden');
+                caregiverView.classList.add('hidden');
+                btnSenior.className = "px-4 py-2 rounded-xl text-sm font-bold bg-teal-600 text-white shadow-sm transition-all";
+                btnCaregiver.className = "px-4 py-2 rounded-xl text-sm font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all";
+                renderSeniorUI();
+            } else {
+                seniorView.classList.add('hidden');
+                caregiverView.classList.remove('hidden');
+                btnCaregiver.className = "px-4 py-2 rounded-xl text-sm font-bold bg-teal-600 text-white shadow-sm transition-all";
+                btnSenior.className = "px-4 py-2 rounded-xl text-sm font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all";
+            }
+        }
+
+        // --- LANGUAGE & SPEECH ---
+        function setLanguage(lang) {
+            currentLang = lang;
+            ['en', 'hi', 'te'].forEach(l => {
+                const btn = document.getElementById(`lang-${l}`);
+                if (l === lang) {
+                    btn.className = "px-2.5 py-1 rounded bg-teal-600 font-bold text-xs text-white";
+                } else {
+                    btn.className = "px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs";
+                }
+            });
+
+            // Update UI text
+            const t = translations[lang];
+            document.getElementById('header-subtitle').innerText = t.subtitle;
+            document.getElementById('nav-senior-text').innerText = t.seniorText;
+            document.getElementById('nav-caregiver-text').innerText = t.caregiverText;
+            document.getElementById('badge-mode').innerText = t.modeBadge;
+            document.getElementById('senior-greeting').innerText = t.greeting;
+            document.getElementById('senior-subtitle').innerText = t.seniorSub;
+            document.getElementById('btn-read-plan').innerText = t.readPlan;
+            document.getElementById('btn-sos').innerText = t.sosBtn;
+            document.getElementById('heading-schedule').innerText = t.scheduleHeading;
+            document.getElementById('heading-ai-helper').innerText = t.aiHelperHeading;
+            document.getElementById('ai-helper-desc').innerText = t.aiHelperDesc;
+            document.getElementById('heading-care-circle').innerText = t.careCircleHeading;
+            document.getElementById('role-primary-caregiver').innerText = t.primaryCaregiver;
+            document.getElementById('role-cardiologist').innerText = t.cardiologist;
+
+            showToast(`Language switched to ${lang.toUpperCase()}`);
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            const btn = document.getElementById('mute-btn');
+            if (isMuted) {
+                btn.innerText = "🔇 Muted";
+                btn.className = "px-3 py-1 rounded bg-rose-900 text-xs font-bold text-rose-200 border border-rose-700";
+                window.speechSynthesis.cancel();
+            } else {
+                btn.innerText = "🔊 Sound On";
+                btn.className = "px-3 py-1 rounded bg-slate-800 text-xs font-bold hover:bg-slate-700 transition-all border border-slate-700";
+            }
+        }
+
+        function speakText(text) {
+            if (isMuted) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            const volumeSlider = document.getElementById('speech-volume');
+            utterance.volume = parseFloat(volumeSlider.value);
+            
+            if (currentLang === 'hi') utterance.lang = 'hi-IN';
+            else if (currentLang === 'te') utterance.lang = 'te-IN';
+            else utterance.lang = 'en-IN';
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function readTodaysPlan() {
+            let pendingCount = state.medications.filter(m => m.status === 'pending').length;
+            let text = currentLang === 'hi' 
+                ? `नमस्ते कमला जी। आज आपकी ${pendingCount} दवाइयाँ बाकी हैं। कृपया समय पर लें।`
+                : currentLang === 'te'
+                ? `నమస్తే కమలా గారు. ఈరోజు మీకు ${pendingCount} మందులు మిగిలి ఉన్నాయి.`
+                : `Namaste Mrs. Kamala Devi. You have ${pendingCount} medications pending for today. Please take them on time.`;
+            speakText(text);
+            showToast("Reading today's plan aloud...");
+        }
+
+        // --- RENDER SENIOR UI ---
+        function renderSeniorUI() {
+            const list = document.getElementById('medication-list');
+            list.innerHTML = '';
+
+            state.medications.forEach(med => {
+                const isTaken = med.status === 'taken';
+                const card = document.createElement('div');
+                card.className = `p-5 rounded-2xl border transition-all flex items-center justify-between gap-4 ${
+                    isTaken ? 'bg-slate-50 border-slate-200 opacity-75' : 'bg-white border-teal-200 shadow-md ring-2 ring-teal-500/10'
+                }`;
+
+                card.innerHTML = `
+                    <div class="flex items-start space-x-4">
+                        <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-bold ${
+                            isTaken ? 'bg-slate-200 text-slate-600' : 'bg-teal-100 text-teal-700'
+                        }">
+                            ${isTaken ? '✓' : '💊'}
+                        </div>
+                        <div>
+                            <h4 class="font-extrabold text-slate-900 text-base ${isTaken ? 'line-through text-slate-500' : ''}">${escapeHTML(med.name)}</h4>
+                            <p class="text-xs font-semibold text-teal-700 mt-0.5">⏰ ${escapeHTML(med.time)} • ${escapeHTML(med.food)}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="speakMedication(${Number(med.id) || 0})" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition" title="Listen" aria-label="Listen to ${escapeHTML(med.name)} reminder">
+                            🔊
+                        </button>
+                        <button onclick="toggleMedStatus(${med.id})" class="px-4 py-2.5 rounded-xl text-xs font-bold shadow transition ${
+                            isTaken ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-teal-600 text-white hover:bg-teal-700'
+                        }">
+                            ${isTaken ? 'Undo' : 'I Took This'}
+                        </button>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+
+            renderAppointmentsUI();
+
+            // Pending approval banner check
+            const banner = document.getElementById('senior-approval-banner');
+            if (state.pendingChange) {
+                banner.classList.remove('hidden');
+                document.getElementById('approval-item-text').innerText = state.pendingChange.text;
+            } else {
+                banner.classList.add('hidden');
+            }
+        }
+
+        function renderAppointmentsUI() {
+            const list = document.getElementById('appointment-list');
+            list.innerHTML = '';
+            if (!state.appointments.length) { list.textContent = 'No appointments added yet.'; return; }
+            state.appointments.slice().sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`)).forEach(appointment => {
+                const row = document.createElement('div');
+                row.className = 'p-3 rounded-xl bg-blue-50 border border-blue-100 text-sm';
+                const dateLabel = new Date(`${appointment.date}T${appointment.time || '00:00'}`).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+                row.innerHTML = `<p class="font-bold text-slate-900">${escapeHTML(appointment.doctor)}</p><p class="text-xs text-slate-700 mt-1">${escapeHTML(dateLabel)} • ${escapeHTML(appointment.location)}</p>`;
+                list.appendChild(row);
+            });
+        }
+
+        function addAppointment() {
+            const doctor = document.getElementById('appointment-doctor').value.trim();
+            const date = document.getElementById('appointment-date').value;
+            const time = document.getElementById('appointment-time').value;
+            const location = document.getElementById('appointment-location').value.trim();
+            if (!doctor || !date || !time || !location) { showToast('Enter the doctor, date, time, and clinic.', 'warning'); return; }
+            if (Number.isNaN(new Date(`${date}T${time}`).getTime())) { showToast('Enter a valid appointment date and time.', 'warning'); return; }
+            state.appointments.push({ id: Date.now(), doctor, date, time, location });
+            state.logs.unshift({ time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), text: `Appointment added: ${doctor} on ${date} at ${time}` });
+            persistDemoState();
+            renderAppointmentsUI();
+            renderCaregiverUI();
+            ['appointment-doctor', 'appointment-date', 'appointment-time', 'appointment-location'].forEach(id => { document.getElementById(id).value = ''; });
+            showToast('Appointment added to the senior view. No email reminder was sent.');
+        }
+
+        function speakMedication(id) {
+            const med = state.medications.find(item => item.id === id);
+            if (med) speakText(`${med.name}, ${med.time}, ${med.food}`);
+        }
+
+        function toggleMedStatus(id) {
+            const med = state.medications.find(m => m.id === id);
+            if (med) {
+                med.status = med.status === 'taken' ? 'pending' : 'taken';
+                state.logs.unshift({ time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), text: `${med.name} marked as ${med.status} by Kamala Devi` });
+                persistDemoState();
+                renderSeniorUI();
+                renderCaregiverUI();
+                showToast(`Updated ${med.name} status!`);
+            }
+        }
+
+        // --- AI HELPER ---
+        function askAI(question) {
+            const box = document.getElementById('ai-response-box');
+            const textElem = document.getElementById('ai-response-text');
+            box.classList.remove('hidden');
+
+            let answer = "";
+            if (question.includes("Metformin")) {
+                answer = "Food and drink instructions can differ by prescription and formulation. Check the label and ask your pharmacist or prescribing clinician before changing how you take it.";
+            } else if (question.includes("miss")) {
+                answer = "Missed-dose instructions depend on the medicine. Check the patient leaflet or contact your pharmacist or prescriber. Do not take an extra or double dose unless a healthcare professional tells you to.";
+            } else {
+                answer = "Dizziness can have many causes. Sit or lie down to avoid falling, and contact your healthcare professional for advice. Seek urgent help for severe symptoms such as fainting, chest pain, or difficulty breathing.";
+            }
+
+            textElem.innerText = answer;
+            speakText(answer);
+            showToast("Demo guidance displayed. Confirm medicine questions with a healthcare professional.");
+        }
+
+        // --- CAREGIVER PORTAL & AUTH ---
+        function autofillPasscode() {
+            document.getElementById('passcode-input').value = "123456";
+            showToast("Demo passcode autofilled!");
+        }
+
+        function verifyPasscode() {
+            const pin = document.getElementById('passcode-input').value;
+            if (pin === "123456") {
+                document.getElementById('caregiver-auth-box').classList.add('hidden');
+                document.getElementById('caregiver-dashboard').classList.remove('hidden');
+                renderCaregiverUI();
+                showToast("Caregiver Portal unlocked successfully!");
+            } else {
+                showToast("Incorrect demo PIN. Use the visible demo autofill option.", "error");
+            }
+        }
+
+        function lockCaregiverPortal() {
+            document.getElementById('caregiver-dashboard').classList.add('hidden');
+            document.getElementById('caregiver-auth-box').classList.remove('hidden');
+            document.getElementById('passcode-input').value = "";
+            showToast("Portal locked securely.");
+        }
+
+        function renderCaregiverUI() {
+            const logList = document.getElementById('caregiver-log-list');
+            logList.innerHTML = '';
+            state.logs.forEach(log => {
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs";
+                item.innerHTML = `
+                    <span class="font-medium text-slate-800">${escapeHTML(log.text)}</span>
+                    <span class="text-slate-400 font-semibold">${log.time}</span>
+                `;
+                logList.appendChild(item);
+            });
+        }
+
+        function proposeCaregiverChange() {
+            const name = document.getElementById('new-med-name').value;
+            const time = document.getElementById('new-med-time').value;
+            if (!name || !time) {
+                showToast("Please enter both name and time!", "warning");
+                return;
+            }
+
+            state.pendingChange = { text: `${name} at ${time}` };
+            state.logs.unshift({ time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), text: `Caregiver proposed new item: ${name} at ${time}` });
+            document.getElementById('new-med-name').value = '';
+            document.getElementById('new-med-time').value = '';
+            persistDemoState();
+            renderCaregiverUI();
+            showToast("Change proposed to senior for approval!");
+            switchView('senior');
+        }
+
+        function approveCaregiverChange(isApproved) {
+            if (isApproved && state.pendingChange) {
+                state.medications.push({
+                    id: state.medications.length + 1,
+                    name: state.pendingChange.text.split(' at ')[0],
+                    time: state.pendingChange.text.split(' at ')[1],
+                    status: "pending",
+                    food: "Caregiver prescribed"
+                });
+                state.logs.unshift({ time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), text: `Senior APPROVED caregiver proposal: ${state.pendingChange.text}` });
+                showToast("Change approved and added to schedule!");
+            } else {
+                state.logs.unshift({ time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), text: `Senior declined caregiver proposal.` });
+                showToast("Proposal declined.", "warning");
+            }
+            state.pendingChange = null;
+            persistDemoState();
+            renderSeniorUI();
+        }
+
+        function simulateMissedDoseAlert() {
+            state.logs.unshift({ time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), text: `⚠️ DEMO ESCALATION: Telmisartan 40mg overdue by 60 mins — caregiver alert recorded locally; no SMS/email was sent.` });
+            persistDemoState();
+            renderCaregiverUI();
+            showToast("Demo escalation recorded locally. No SMS/email was sent.", "warning");
+        }
+
+        // --- EMERGENCY SOS ---
+        function triggerEmergencySOS() {
+            const modal = document.getElementById('sos-modal');
+            modal.classList.remove('hidden');
+            let countdown = 5;
+            const countElem = document.getElementById('sos-countdown');
+            countElem.innerText = countdown;
+
+            sosTimer = setInterval(() => {
+                countdown--;
+                countElem.innerText = countdown;
+                if (countdown <= 0) {
+                    clearInterval(sosTimer);
+                    confirmSOSCall();
+                }
+            }, 1000);
+        }
+
+        function cancelSOS() {
+            clearInterval(sosTimer);
+            document.getElementById('sos-modal').classList.add('hidden');
+            showToast("Emergency SOS cancelled.", "warning");
+        }
+
+        function confirmSOSCall() {
+            clearInterval(sosTimer);
+            document.getElementById('sos-modal').classList.add('hidden');
+            state.logs.unshift({ time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), text: "DEMO SOS confirmed locally. No call, SMS, or push notification was sent." });
+            persistDemoState();
+            renderCaregiverUI();
+            showToast("Demo SOS recorded locally. No emergency call or message was sent.", "error");
+        }
+
+        // --- RESET ---
+        function resetDemoData() {
+            state.medications = [
+                { id: 1, name: "Metformin 500mg", time: "8:00 AM", status: "taken", food: "Take with breakfast" },
+                { id: 2, name: "Telmisartan 40mg (BP)", time: "1:00 PM", status: "pending", food: "Take before lunch" },
+                { id: 3, name: "Atorvastatin 10mg", time: "8:00 PM", status: "pending", food: "Take at bedtime" }
+            ];
+            state.pendingChange = null;
+            state.appointments = [{ id: 1, doctor: "Dr. Rajesh Sharma", date: "2026-11-19", time: "10:30", location: "City Hospital" }];
+            state.logs = [{ time: "Just now", text: "Demo data reset successfully." }];
+            persistDemoState();
+            renderSeniorUI();
+            renderCaregiverUI();
+            showToast("Demo data reset!");
+        }
+    </script>
+</body>
+</html>
