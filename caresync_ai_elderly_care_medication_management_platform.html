@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CareSync AI — Connected Elderly Care & Medication Platform</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cream: '#FAF8F5',
+            creamDark: '#F1EDE6',
+            navy: '#0F2942',
+            navyLight: '#1B3F63',
+            gold: '#C59B27',
+            goldLight: '#F7EFE0',
+            sage: '#1E6F50',
+            sageLight: '#E6F4EE',
+            coral: '#B91C1C',
+            coralLight: '#FEE2E2'
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Plus Jakarta Sans', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #FAF8F5;
+      color: #0F2942;
+      font-family: 'Inter', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .font-display {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    /* Custom subtle scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F1EDE6;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94A3B8;
+    }
+    @keyframes pulseRing {
+      0% { transform: scale(0.95); opacity: 0.7; }
+      70% { transform: scale(1.06); opacity: 0; }
+      100% { transform: scale(0.95); opacity: 0; }
+    }
+    .sos-pulse {
+      animation: pulseRing 2s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-navy selection:text-white">
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-3 max-w-md w-[calc(100%-2rem)] pointer-events-none"></div>
+
+  <!-- Emergency SOS Modal -->
+  <div id="sos-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-navy/80 backdrop-blur-sm p-4">
+    <div class="bg-white border-4 border-coral rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl text-center">
+      <div class="w-20 h-20 rounded-full bg-coralLight text-coral flex items-center justify-center mx-auto mb-4">
+        <i data-lucide="alert-triangle" class="w-11 h-11"></i>
+      </div>
+      <h2 class="font-display text-2xl sm:text-3xl font-extrabold text-coral mb-2">Emergency Alert Sent!</h2>
+      <p class="text-lg text-slate-700 mb-6 leading-relaxed">
+        An urgent SMS, phone alert, and high-priority email have been dispatched to <strong>Likitha (Daughter)</strong> and registered emergency contacts.
+      </p>
+      <div class="bg-cream border border-slate-200 rounded-2xl p-4 mb-6 text-left">
+        <div class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Dispatched Details</div>
+        <div class="text-base font-semibold text-navy" id="sos-timestamp">Just now</div>
+        <div class="text-sm text-slate-600 mt-1">Location Shared: Home — Jubilee Hills, Hyderabad</div>
+        <div class="text-sm text-sage font-semibold mt-1">✓ Email logged in Caregiver Alert Center</div>
+      </div>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <button onclick="speakText('Emergency alert sent to your daughter Likitha. Please stay calm and remain seated. Help is on the way.')" class="flex-1 py-4 px-5 rounded-2xl bg-navy text-white font-bold text-lg hover:bg-navyLight transition flex items-center justify-center gap-2">
+          <i data-lucide="volume-2" class="w-6 h-6"></i> Read Assurance
+        </button>
+        <button onclick="closeSosModal()" class="flex-1 py-4 px-5 rounded-2xl bg-slate-200 text-navy font-bold text-lg hover:bg-slate-300 transition">
+          I Am Okay (Close)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Preview Modal -->
+  <div id="email-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-navy/75 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-slate-200">
+      <div class="bg-navy text-white px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="mail-check" class="w-5 h-5 text-gold"></i>
+          <span class="font-display font-bold text-lg">Automated Email Alert Preview</span>
+        </div>
+        <button onclick="closeEmailModal()" class="p-2 rounded-xl hover:bg-white/10 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div id="email-modal-body" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto"></div>
+    </div>
+  </div>
+
+  <!-- Top Navigation Header -->
+  <header class="bg-navy text-white shadow-lg sticky top-0 z-40 border-b-4 border-gold">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <!-- Brand & Profile -->
+        <div class="flex items-start sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-gold/20 border-2 border-gold flex items-center justify-center shrink-0">
+              <i data-lucide="heart-pulse" class="w-7 h-7 text-gold"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <h1 class="font-display text-xl sm:text-2xl font-extrabold tracking-tight text-white">CareSync AI</h1>
+                <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-gold text-navy">Connected Care</span>
+              </div>
+              <p class="text-xs sm:text-sm text-slate-200 mt-0.5">
+                Patient: <strong class="text-white">Mrs. Kamala Devi, 74</strong> &bull; Caregiver: <strong class="text-gold">Likitha (Daughter)</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mode Switcher Pill -->
+        <div class="flex items-center bg-navyLight p-1.5 rounded-2xl border border-white/15 self-stretch sm:self-auto">
+          <button id="btn-mode-senior" onclick="switchMode('senior')" class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-sm sm:text-base transition flex items-center justify-center gap-2 bg-gold text-navy shadow">
+            <i data-lucide="sun" class="w-5 h-5"></i>
+            <span>Senior View (Easy Mode)</span>
+          </button>
+          <button id="btn-mode-caregiver" onclick="switchMode('caregiver')" class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-sm sm:text-base transition flex items-center justify-center gap-2 text-white hover:bg-white/10">
+            <i data-lucide="shield-check" class="w-5 h-5"></i>
+            <span>Caregiver Portal</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+    <!-- ========================================================= -->
+    <!-- VIEW 1: SENIOR VIEW (HIGH CONTRAST, ACCESSIBLE, ZERO-FRICTION) -->
+    <!-- ========================================================= -->
+    <section id="view-senior" class="space-y-8">
+      <!-- Welcome & Daily Progress Banner -->
+      <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border-2 border-slate-200/90 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div class="space-y-2">
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-goldLight text-navy font-bold text-sm">
+            <i data-lucide="calendar" class="w-4 h-4 text-gold"></i>
+            <span id="senior-live-date">Sunday, November 15, 2026</span>
+          </div>
+          <h2 class="font-display text-3xl sm:text-4xl font-extrabold text-navy">
+            Namaste, Mrs. Kamala Devi 🙏
+          </h2>
+          <p class="text-lg sm:text-xl text-slate-700 font-medium" id="senior-progress-text">
+            You have taken 2 of 3 medications today. Keep going!
+          </p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+          <!-- Read Daily Summary Aloud -->
+          <button onclick="readDailySummary()" class="py-4 px-6 rounded-2xl bg-navy text-white hover:bg-navyLight font-bold text-lg shadow-md transition flex items-center justify-center gap-3">
+            <i data-lucide="volume-2" class="w-6 h-6 text-gold"></i>
+            <span>Read Today's Plan</span>
+          </button>
+
+          <!-- Emergency SOS Button -->
+          <div class="relative">
+            <button onclick="triggerEmergencySOS()" class="w-full py-4 px-6 rounded-2xl bg-coral hover:bg-red-800 text-white font-extrabold text-lg shadow-lg transition flex items-center justify-center gap-3 border-2 border-red-900">
+              <i data-lucide="phone-call" class="w-6 h-6"></i>
+              <span>Emergency SOS</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Today's Medications Section -->
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-display text-2xl sm:text-3xl font-extrabold text-navy flex items-center gap-3">
+            <span class="w-10 h-10 rounded-2xl bg-navy text-gold flex items-center justify-center">
+              <i data-lucide="pill" class="w-6 h-6"></i>
+            </span>
+            Today's Medications
+          </h3>
+          <span class="text-sm sm:text-base font-bold text-slate-600 bg-creamDark px-4 py-1.5 rounded-full" id="senior-med-badge">
+            3 Scheduled
+          </span>
+        </div>
+
+        <!-- Senior Medication Cards Grid -->
+        <div id="senior-med-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Bottom Split: Upcoming Doctor Appointments + Ask CareSync AI Senior Helper -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <!-- Upcoming Doctor Appointments (5 cols) -->
+        <div class="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-7 shadow-sm border-2 border-slate-200/90 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-5">
+              <h3 class="font-display text-2xl font-extrabold text-navy flex items-center gap-2.5">
+                <i data-lucide="stethoscope" class="w-7 h-7 text-gold"></i>
+                Doctor Visits
+              </h3>
+              <button onclick="readAppointmentsAloud()" class="px-3.5 py-2 rounded-xl bg-creamDark hover:bg-slate-200 text-navy font-bold text-sm flex items-center gap-1.5 transition">
+                <i data-lucide="volume-2" class="w-4 h-4"></i> Listen
+              </button>
+            </div>
+            <div id="senior-appointments-list" class="space-y-4">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+          <div class="mt-6 pt-4 border-t border-slate-200 text-sm text-slate-600 flex items-center gap-2">
+            <i data-lucide="bell-ring" class="w-4 h-4 text-sage shrink-0"></i>
+            <span>Automatic reminders are sent to Likitha 24 hours before each visit.</span>
+          </div>
+        </div>
+
+        <!-- Ask CareSync AI Senior Helper (7 cols) -->
+        <div class="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-7 shadow-sm border-2 border-navy/20">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-display text-2xl font-extrabold text-navy flex items-center gap-2.5">
+              <span class="w-9 h-9 rounded-xl bg-gold text-navy flex items-center justify-center">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+              </span>
+              Ask CareSync AI Helper
+            </h3>
+            <span class="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-sageLight text-sage">Simple & Safe Answers</span>
+          </div>
+          <p class="text-base sm:text-lg text-slate-600 mb-4">
+            Tap a question below or type your own to get clear, easy-to-understand health guidance:
+          </p>
+
+          <!-- Quick Tap Prompts -->
+          <div class="flex flex-wrap gap-2.5 mb-4">
+            <button onclick="askSeniorAI('Can I take Metformin with milk?')" class="px-4 py-2.5 rounded-2xl bg-cream hover:bg-goldLight border border-slate-300 text-navy font-semibold text-base transition text-left">
+              🥛 Can I take Metformin with milk?
+            </button>
+            <button onclick="askSeniorAI('What if I missed my morning pill?')" class="px-4 py-2.5 rounded-2xl bg-cream hover:bg-goldLight border border-slate-300 text-navy font-semibold text-base transition text-left">
+              ⏰ What if I missed my morning pill?
+            </button>
+            <button onclick="askSeniorAI('Explain my prescription simply')" class="px-4 py-2.5 rounded-2xl bg-cream hover:bg-goldLight border border-slate-300 text-navy font-semibold text-base transition text-left">
+              📋 Explain my prescription simply
+            </button>
+          </div>
+
+          <!-- Custom Input -->
+          <form onsubmit="handleSeniorCustomAsk(event)" class="flex flex-col sm:flex-row gap-3 mb-5">
+            <input id="senior-ai-input" type="text" placeholder="Type a question about your medicines..." class="flex-1 px-4 py-3.5 rounded-2xl border-2 border-slate-300 focus:border-navy focus:outline-none text-lg bg-cream/50" />
+            <button type="submit" class="px-6 py-3.5 rounded-2xl bg-navy hover:bg-navyLight text-white font-bold text-lg transition flex items-center justify-center gap-2 shrink-0">
+              <span>Ask AI</span>
+              <i data-lucide="send" class="w-5 h-5"></i>
+            </button>
+          </form>
+
+          <!-- AI Response Box -->
+          <div id="senior-ai-response-box" class="bg-cream border-2 border-gold/50 rounded-2xl p-5">
+            <div class="flex items-start justify-between gap-3">
+              <div class="space-y-1.5">
+                <div class="text-xs font-extrabold uppercase tracking-wider text-gold">CareSync AI Guidance</div>
+                <p id="senior-ai-response-text" class="text-lg text-navy font-medium leading-relaxed">
+                  Hello Mrs. Kamala Devi! Tap any question above or ask me about your tablets, meal timings, or doctor instructions.
+                </p>
+              </div>
+              <button onclick="speakText(document.getElementById('senior-ai-response-text').innerText)" class="p-3 rounded-xl bg-navy text-white hover:bg-navyLight shrink-0" title="Read Answer Aloud">
+                <i data-lucide="volume-2" class="w-5 h-5"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================= -->
+    <!-- VIEW 2: CAREGIVER & FAMILY PORTAL (PASSCODE PROTECTED)    -->
+    <!-- ========================================================= -->
+    <section id="view-caregiver" class="hidden">
+
+      <!-- Passcode Gate Screen -->
+      <div id="caregiver-lock-screen" class="max-w-md mx-auto my-8 bg-white rounded-3xl p-8 shadow-xl border-2 border-slate-200 text-center">
+        <div class="w-16 h-16 rounded-2xl bg-navy text-gold flex items-center justify-center mx-auto mb-4 shadow">
+          <i data-lucide="lock" class="w-8 h-8"></i>
+        </div>
+        <h2 class="font-display text-2xl font-extrabold text-navy mb-1">Family & Caretaker Access</h2>
+        <p class="text-slate-600 text-sm mb-5">
+          Enter the 6-digit security passcode to manage <strong>Mrs. Kamala Devi's</strong> healthcare profile, schedules, and alerts.
+        </p>
+
+        <!-- 1-Click Demo Passcode Helper Pill -->
+        <button type="button" onclick="fillDemoPasscode()" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-goldLight border border-gold text-navy font-bold text-xs mb-6 hover:bg-gold/20 transition">
+          <i data-lucide="key-round" class="w-3.5 h-3.5 text-gold"></i>
+          <span>Demo Passcode: <span id="demo-passcode-hint" class="underline">123456</span> (Click to Autofill)</span>
+        </button>
+
+        <form onsubmit="verifyPasscode(event)" class="space-y-4">
+          <input id="passcode-input" type="password" maxlength="6" inputmode="numeric" placeholder="••••••" class="w-full text-center tracking-[0.6em] text-2xl font-extrabold py-4 px-4 rounded-2xl border-2 border-slate-300 focus:border-navy focus:outline-none bg-cream" required />
+          <p id="passcode-error" class="text-coral text-sm font-semibold hidden">Incorrect passcode. Please try again.</p>
+          <button type="submit" class="w-full py-4 rounded-2xl bg-navy hover:bg-navyLight text-white font-bold text-lg shadow transition">
+            Unlock Caregiver Dashboard
+          </button>
+        </form>
+      </div>
+
+      <!-- Unlocked Caregiver Dashboard -->
+      <div id="caregiver-dashboard" class="hidden space-y-6">
+        <!-- Top Action Bar -->
+        <div class="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-sage"></span>
+              <span class="text-xs font-bold uppercase tracking-wider text-sage">Authorized Caregiver Session Active</span>
+            </div>
+            <h2 class="font-display text-2xl font-extrabold text-navy mt-0.5">Caregiver & Family Command Center</h2>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <button onclick="simulateMissedDoseAlert()" class="px-4 py-2.5 rounded-xl bg-coral hover:bg-red-800 text-white font-bold text-sm shadow transition flex items-center gap-2">
+              <i data-lucide="bell-ring" class="w-4 h-4"></i>
+              <span>Simulate Missed Dose & Send Email Alert</span>
+            </button>
+            <button onclick="lockCaregiverPortal()" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-navy font-bold text-sm transition flex items-center gap-2">
+              <i data-lucide="lock" class="w-4 h-4"></i>
+              <span>Lock Portal</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex overflow-x-auto gap-2 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm">
+          <button onclick="switchCaregiverTab('overview')" id="tab-btn-overview" class="cg-tab-btn px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap bg-navy text-white transition flex items-center gap-2">
+            <i data-lucide="bar-chart-3" class="w-4 h-4"></i> Overview & Adherence
+          </button>
+          <button onclick="switchCaregiverTab('meds')" id="tab-btn-meds" class="cg-tab-btn px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap text-slate-600 hover:bg-cream transition flex items-center gap-2">
+            <i data-lucide="pill" class="w-4 h-4"></i> Manage Medications
+          </button>
+          <button onclick="switchCaregiverTab('appointments')" id="tab-btn-appointments" class="cg-tab-btn px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap text-slate-600 hover:bg-cream transition flex items-center gap-2">
+            <i data-lucide="calendar-plus" class="w-4 h-4"></i> Doctor Appointments
+          </button>
+          <button onclick="switchCaregiverTab('alerts')" id="tab-btn-alerts" class="cg-tab-btn px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap text-slate-600 hover:bg-cream transition flex items-center gap-2">
+            <i data-lucide="mail" class="w-4 h-4"></i> Email Alert Center
+            <span id="alert-count-badge" class="px-2 py-0.5 text-xs rounded-full bg-gold text-navy font-extrabold">2</span>
+          </button>
+          <button onclick="switchCaregiverTab('ai')" id="tab-btn-ai" class="cg-tab-btn px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap text-slate-600 hover:bg-cream transition flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-4 h-4"></i> AI Interaction & Note Summarizer
+          </button>
+          <button onclick="switchCaregiverTab('security')" id="tab-btn-security" class="cg-tab-btn px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap text-slate-600 hover:bg-cream transition flex items-center gap-2">
+            <i data-lucide="shield" class="w-4 h-4"></i> Passcode & Settings
+          </button>
+        </div>
+
+        <!-- TAB A: OVERVIEW & ADHERENCE ANALYTICS -->
+        <div id="cg-tab-overview" class="cg-tab-panel space-y-6">
+          <!-- KPI Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+              <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Today's Adherence Rate</div>
+              <div class="text-3xl font-extrabold text-navy mt-2" id="kpi-adherence-rate">67%</div>
+              <div class="w-full bg-slate-200 h-2.5 rounded-full mt-3 overflow-hidden">
+                <div id="kpi-adherence-bar" class="bg-sage h-full rounded-full transition-all duration-500" style="width: 67%"></div>
+              </div>
+            </div>
+            <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+              <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Doses Taken Today</div>
+              <div class="text-3xl font-extrabold text-sage mt-2" id="kpi-taken-count">2</div>
+              <p class="text-xs text-slate-500 mt-2">Verified with timestamp</p>
+            </div>
+            <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+              <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Pending Doses</div>
+              <div class="text-3xl font-extrabold text-gold mt-2" id="kpi-pending-count">1</div>
+              <p class="text-xs text-slate-500 mt-2">Auto-reminder scheduled</p>
+            </div>
+            <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+              <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Automated Emails Sent</div>
+              <div class="text-3xl font-extrabold text-navy mt-2" id="kpi-emails-count">2</div>
+              <p class="text-xs text-slate-500 mt-2">To family & caretakers</p>
+            </div>
+          </div>
+
+          <!-- Timestamped Adherence Audit Log Table -->
+          <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 class="font-display text-lg font-extrabold text-navy">Live Medication Adherence Audit Log</h3>
+                <p class="text-sm text-slate-500">Real-time synchronization from Mrs. Kamala Devi's Senior View</p>
+              </div>
+              <button onclick="resetDailyStatuses()" class="px-4 py-2 rounded-xl bg-cream hover:bg-slate-200 text-navy font-bold text-xs border border-slate-300 transition">
+                Reset All to Pending (New Day)
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-cream text-slate-600 text-xs uppercase tracking-wider border-b border-slate-200">
+                    <th class="py-3.5 px-6 font-bold">Medication</th>
+                    <th class="py-3.5 px-6 font-bold">Dosage & Timing</th>
+                    <th class="py-3.5 px-6 font-bold">Meal Instruction</th>
+                    <th class="py-3.5 px-6 font-bold">Status</th>
+                    <th class="py-3.5 px-6 font-bold">Logged Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody id="cg-audit-table-body" class="divide-y divide-slate-100 text-sm">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB B: MANAGE MEDICATIONS (CRUD) -->
+        <div id="cg-tab-meds" class="cg-tab-panel hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Add Medication Form -->
+          <div class="lg:col-span-5 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm h-fit">
+            <h3 class="font-display text-lg font-extrabold text-navy mb-4 flex items-center gap-2">
+              <i data-lucide="plus-circle" class="w-5 h-5 text-gold"></i> Add New Medication
+            </h3>
+            <form onsubmit="addMedication(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Medicine Name</label>
+                <input id="med-name" type="text" required placeholder="e.g., Atorvastatin" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-navy focus:outline-none bg-cream/40" />
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Dosage</label>
+                  <input id="med-dosage" type="text" required placeholder="e.g., 10mg (1 Tablet)" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-navy focus:outline-none bg-cream/40" />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Scheduled Time</label>
+                  <input id="med-time" type="text" required placeholder="e.g., 9:00 PM" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-navy focus:outline-none bg-cream/40" />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Meal Instruction</label>
+                  <select id="med-meal" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-navy focus:outline-none bg-cream/40">
+                    <option value="After Breakfast">After Breakfast</option>
+                    <option value="Before Breakfast">Before Breakfast</option>
+                    <option value="After Lunch">After Lunch</option>
+                    <option value="After Dinner">After Dinner</option>
+                    <option value="With Water Anytime">With Water Anytime</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Pill Visual Color</label>
+                  <select id="med-color" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-navy focus:outline-none bg-cream/40">
+                    <option value="blue">Blue Capsule</option>
+                    <option value="amber">Golden / Yellow Tablet</option>
+                    <option value="emerald">Green Tablet</option>
+                    <option value="rose">Pink / Coral Tablet</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Plain-Language Note for Senior</label>
+                <input id="med-note" type="text" placeholder="e.g., Helps keep cholesterol & heart healthy" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-navy focus:outline-none bg-cream/40" />
+              </div>
+              <button type="submit" class="w-full py-3 rounded-xl bg-navy hover:bg-navyLight text-white font-bold transition shadow">
+                Save & Sync to Senior View
+              </button>
+            </form>
+          </div>
+
+          <!-- Current Medication Schedule List -->
+          <div class="lg:col-span-7 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+            <h3 class="font-display text-lg font-extrabold text-navy mb-4">Active Daily Prescription Schedule</h3>
+            <div id="cg-med-list" class="space-y-3">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB C: DOCTOR APPOINTMENTS MANAGER -->
+        <div id="cg-tab-appointments" class="cg-tab-panel hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Add Appointment Form -->
+          <div class="lg:col-span-5 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm h-fit">
+            <h3 class="font-display text-lg font-extrabold text-navy mb-4 flex items-center gap-2">
+              <i data-lucide="calendar-plus" class="w-5 h-5 text-gold"></i> Schedule Doctor Appointment
+            </h3>
+            <form onsubmit="addAppointment(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Doctor Name</label>
+                <input id="apt-doctor" type="text" required placeholder="e.g., Dr. Rajesh Sharma" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-navy focus:outline-none bg-cream/40" />
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Specialty</label>
+                  <input id="apt-specialty" type="text" required placeholder="e.g., Cardiologist" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-navy focus:outline-none bg-cream/40" />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Hospital / Clinic</label>
+                  <input id="apt-clinic" type="text" required placeholder="e.g., Apollo Hospitals" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-navy focus:outline-none bg-cream/40" />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Date</label>
+                  <input id="apt-date" type="text" required placeholder="e.g., Nov 18, 2026" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-navy focus:outline-none bg-cream/40" />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Time</label>
+                  <input id="apt-time" type="text" required placeholder="e.g., 10:30 AM" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-navy focus:outline-none bg-cream/40" />
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Preparation / Notes</label>
+                <input id="apt-notes" type="text" placeholder="e.g., Bring fasting blood sugar report" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-navy focus:outline-none bg-cream/40" />
+              </div>
+              <button type="submit" class="w-full py-3 rounded-xl bg-navy hover:bg-navyLight text-white font-bold transition shadow">
+                Add Appointment & Queue Email Reminder
+              </button>
+            </form>
+          </div>
+
+          <!-- Upcoming Appointments List -->
+          <div class="lg:col-span-7 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+            <h3 class="font-display text-lg font-extrabold text-navy mb-4">Upcoming Medical Appointments</h3>
+            <div id="cg-appointments-list" class="space-y-3">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB D: PROACTIVE EMAIL ALERT CENTER & LIVE SIMULATOR -->
+        <div id="cg-tab-alerts" class="cg-tab-panel hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Recipient Config & Trigger Simulator -->
+          <div class="lg:col-span-4 space-y-6">
+            <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+              <h3 class="font-display text-lg font-extrabold text-navy mb-2">Registered Caregiver Emails</h3>
+              <p class="text-xs text-slate-500 mb-4">Automated notifications for missed doses, upcoming pills, and appointments are dispatched here.</p>
+              <div id="caregiver-emails-list" class="space-y-2 mb-4"></div>
+              <form onsubmit="addCaregiverEmail(event)" class="flex gap-2">
+                <input id="new-caregiver-email" type="email" required placeholder="caretaker@email.com" class="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-sm focus:border-navy focus:outline-none" />
+                <button type="submit" class="px-3.5 py-2 rounded-xl bg-navy text-white font-bold text-sm hover:bg-navyLight">Add</button>
+              </form>
+            </div>
+
+            <div class="bg-goldLight/60 rounded-3xl p-6 border-2 border-gold">
+              <h4 class="font-display font-extrabold text-navy text-base mb-1">Live Hackathon Demo Simulator</h4>
+              <p class="text-xs text-slate-700 mb-4">
+                Test the proactive reminder engine immediately by simulating an overdue medication or upcoming doctor visit alert.
+              </p>
+              <div class="space-y-2.5">
+                <button onclick="simulateMissedDoseAlert()" class="w-full py-3 px-4 rounded-xl bg-coral hover:bg-red-800 text-white font-bold text-sm transition flex items-center justify-center gap-2">
+                  <i data-lucide="alert-circle" class="w-4 h-4"></i> Trigger Missed Dose Email
+                </button>
+                <button onclick="simulateUpcomingReminder()" class="w-full py-3 px-4 rounded-xl bg-navy hover:bg-navyLight text-white font-bold text-sm transition flex items-center justify-center gap-2">
+                  <i data-lucide="clock" class="w-4 h-4"></i> Trigger Upcoming Dose Reminder
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dispatched Email Outbox / Log -->
+          <div class="lg:col-span-8 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-display text-lg font-extrabold text-navy">Proactive Email Notification Log</h3>
+                <p class="text-xs text-slate-500">Click any email record to inspect the full HTML message sent to family members</p>
+              </div>
+            </div>
+            <div id="email-logs-list" class="space-y-3">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB E: AI PRESCRIPTION & INTERACTION ASSISTANT -->
+        <div id="cg-tab-ai" class="cg-tab-panel hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Drug-Food Interaction Checker -->
+          <div class="lg:col-span-6 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-xl bg-goldLight text-navy flex items-center justify-center">
+                <i data-lucide="shield-alert" class="w-5 h-5 text-gold"></i>
+              </div>
+              <div>
+                <h3 class="font-display text-lg font-extrabold text-navy">Drug & Food Interaction Guard</h3>
+                <p class="text-xs text-slate-500">Verify safety between current prescriptions and foods/supplements</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Medication</label>
+                <select id="ai-check-med" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-cream/40 text-sm font-medium">
+                  <option value="Metformin 500mg">Metformin 500mg</option>
+                  <option value="Amlodipine 5mg">Amlodipine 5mg</option>
+                  <option value="Vitamin D3 60K">Vitamin D3 60K</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Food / Item to Check</label>
+                <select id="ai-check-item" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-cream/40 text-sm font-medium">
+                  <option value="Grapefruit / Citrus Juice">Grapefruit / Citrus Juice</option>
+                  <option value="Warm Milk / Dairy">Warm Milk / Dairy</option>
+                  <option value="High-Fat Meal">High-Fat Meal</option>
+                  <option value="Herbal / Green Tea">Herbal / Green Tea</option>
+                </select>
+              </div>
+            </div>
+
+            <button onclick="runInteractionCheck()" class="w-full py-3 rounded-xl bg-navy hover:bg-navyLight text-white font-bold text-sm transition">
+              Check Safety Interaction
+            </button>
+
+            <div id="ai-interaction-result" class="bg-cream rounded-2xl p-4 border border-slate-200 text-sm text-slate-700 leading-relaxed">
+              Select a medication and a food item above to evaluate absorption and safety interactions.
+            </div>
+          </div>
+
+          <!-- Doctor Visit Note Simplifier -->
+          <div class="lg:col-span-6 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-xl bg-sageLight text-sage flex items-center justify-center">
+                <i data-lucide="file-text" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="font-display text-lg font-extrabold text-navy">Doctor Notes → Senior Plain-Language Translator</h3>
+                <p class="text-xs text-slate-500">Convert clinical jargon into clear instructions for Mrs. Kamala Devi</p>
+              </div>
+            </div>
+
+            <textarea id="clinical-note-input" rows="3" class="w-full p-3.5 rounded-2xl border border-slate-300 text-sm focus:border-navy focus:outline-none bg-cream/40">Pt presents with controlled HTN (128/82 mmHg) and borderline HbA1c (6.8%). Continue Metformin 500mg BID post-prandial and Amlodipine 5mg OD morning. Supplement Cholecalciferol 60,000 IU weekly. Follow-up lipid profile in 4 weeks.</textarea>
+
+            <button onclick="simplifyClinicalNote()" class="w-full py-3 rounded-xl bg-sage hover:bg-emerald-800 text-white font-bold text-sm transition">
+              Translate to Simple Senior Summary
+            </button>
+
+            <div id="simplified-note-output" class="bg-sageLight/50 border border-sage/30 rounded-2xl p-4 text-sm text-navy leading-relaxed">
+              Click the button above to translate the clinical discharge note into senior-friendly language.
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB F: PASSCODE & PROFILE SETTINGS -->
+        <div id="cg-tab-security" class="cg-tab-panel hidden max-w-xl bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-5">
+          <h3 class="font-display text-lg font-extrabold text-navy">Security & Shared Ecosystem Passcode</h3>
+          <p class="text-sm text-slate-600">
+            Share this 6-digit passcode only with trusted family members or home nurses authorized to edit Mrs. Kamala Devi's medical profile.
+          </p>
+          <form onsubmit="updatePasscode(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold uppercase text-slate-600 mb-1">New 6-Digit Caregiver Passcode</label>
+              <input id="new-passcode-input" type="text" maxlength="6" pattern="\d{6}" required placeholder="Enter 6 digits (e.g., 654321)" class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:border-navy focus:outline-none font-bold tracking-widest" />
+            </div>
+            <button type="submit" class="px-6 py-3 rounded-xl bg-navy text-white font-bold text-sm hover:bg-navyLight transition">
+              Update Security Passcode
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 mt-12 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-600">
+      <div class="flex items-center gap-2">
+        <span class="font-display font-bold text-navy">CareSync AI</span>
+        <span>&bull; Built for Catalyst Solo AI Hackathon (PromptWars &times; MnM)</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <button onclick="resetAllDemoData()" class="text-xs font-bold text-coral hover:underline flex items-center gap-1">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset Demo Data
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Application Logic (100% Client-Side with localStorage Persistence) -->
+  <script>
+    const STORAGE_KEY = 'caresync_ai_state_v1';
+
+    const DEFAULT_STATE = {
+      passcode: '123456',
+      caregiverEmails: ['likitha.family@caresync.demo', 'dr.sharma.clinic@caresync.demo'],
+      medications: [
+        {
+          id: 'med-1',
+          name: 'Metformin 500mg',
+          dosage: '1 White Tablet',
+          time: '8:30 AM',
+          meal: 'After Breakfast',
+          color: 'blue',
+          note: 'Helps keep your blood sugar steady after morning meal.',
+          status: 'taken',
+          takenAt: '8:34 AM'
+        },
+        {
+          id: 'med-2',
+          name: 'Amlodipine 5mg',
+          dosage: '1 Small Tablet',
+          time: '9:00 AM',
+          meal: 'After Breakfast',
+          color: 'amber',
+          note: 'Keeps blood pressure healthy and protects your heart.',
+          status: 'taken',
+          takenAt: '9:02 AM'
+        },
+        {
+          id: 'med-3',
+          name: 'Vitamin D3 60K',
+          dosage: '1 Softgel Capsule',
+          time: '2:00 PM',
+          meal: 'After Lunch',
+          color: 'emerald',
+          note: 'Supports strong bones, joints, and daily energy.',
+          status: 'pending',
+          takenAt: null
+        }
+      ],
+      appointments: [
+        {
+          id: 'apt-1',
+          doctor: 'Dr. Rajesh Sharma',
+          specialty: 'Senior Cardiologist',
+          clinic: 'Apollo Heart Centre, Jubilee Hills',
+          date: 'Nov 18, 2026',
+          time: '10:30 AM',
+          notes: 'Routine blood pressure & ECG checkup. Likitha will accompany.'
+        },
+        {
+          id: 'apt-2',
+          doctor: 'Dr. Ananya Rao',
+          specialty: 'Endocrinologist',
+          clinic: 'Care Diabetes & Wellness Clinic',
+          date: 'Nov 24, 2026',
+          time: '11:15 AM',
+          notes: 'Carry morning fasting sugar log.'
+        }
+      ],
+      emailLogs: [
+        {
+          id: 'mail-1',
+          type: 'upcoming',
+          subject: '⏰ Upcoming Dose Reminder: Vitamin D3 60K at 2:00 PM',
+          recipient: 'likitha.family@caresync.demo',
+          timestamp: 'Today, 1:30 PM',
+          body: 'Hello Likitha,\n\nThis is a proactive CareSync AI reminder that Mrs. Kamala Devi has an upcoming medication scheduled:\n\n• Medication: Vitamin D3 60K (1 Softgel Capsule)\n• Timing: 2:00 PM (After Lunch)\n\nWe will notify you automatically once she taps "I Took My Meds" on her Senior View.'
+        },
+        {
+          id: 'mail-2',
+          type: 'appointment',
+          subject: '🩺 Upcoming Doctor Visit: Dr. Rajesh Sharma (Nov 18)',
+          recipient: 'likitha.family@caresync.demo',
+          timestamp: 'Yesterday, 6:00 PM',
+          body: 'Hello Likitha,\n\nReminder for Mrs. Kamala Devi\'s upcoming cardiology consultation:\n\n• Doctor: Dr. Rajesh Sharma (Senior Cardiologist)\n• Location: Apollo Heart Centre, Jubilee Hills\n• Date & Time: Nov 18, 2026 at 10:30 AM\n• Notes: Routine blood pressure & ECG checkup.'
+        }
+      ]
+    };
+
+    let appState = loadState();
+    let isCaregiverUnlocked = false;
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          return JSON.parse(raw);
+        }
+      } catch (e) {
+        console.error('Error loading state from localStorage:', e);
+      }
+      return JSON.parse(JSON.stringify(DEFAULT_STATE));
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      } catch (e) {
+        console.error('Error saving state to localStorage:', e);
+      }
+      renderAll();
+    }
+
+    function resetAllDemoData() {
+      appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+      saveState();
+      showToast('Demo data restored to initial state.', 'info');
+    }
+
+    // Speech Synthesis Helper
+    function speakText(text) {
+      if (!('speechSynthesis' in window)) {
+        showToast('Voice readout is not supported in this browser.', 'error');
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.92; // Slightly slower for elderly clarity
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+      showToast('Reading aloud...', 'info');
+    }
+
+    // Toast Notification Helper
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const colors = {
+        success: 'bg-sage text-white border-emerald-900',
+        error: 'bg-coral text-white border-red-950',
+        info: 'bg-navy text-white border-gold'
+      };
+      toast.className = `pointer-events-auto px-5 py-3.5 rounded-2xl shadow-xl border-2 font-semibold text-sm flex items-center justify-between gap-3 transition-all duration-300 ${colors[type] || colors.info}`;
+      toast.innerHTML = `<span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-8px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 3800);
+    }
+
+    // Mode Switching
+    function switchMode(mode) {
+      const seniorView = document.getElementById('view-senior');
+      const caregiverView = document.getElementById('view-caregiver');
+      const btnSenior = document.getElementById('btn-mode-senior');
+      const btnCaregiver = document.getElementById('btn-mode-caregiver');
+
+      if (mode === 'senior') {
+        seniorView.classList.remove('hidden');
+        caregiverView.classList.add('hidden');
+        btnSenior.className = 'flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-sm sm:text-base transition flex items-center justify-center gap-2 bg-gold text-navy shadow';
+        btnCaregiver.className = 'flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-sm sm:text-base transition flex items-center justify-center gap-2 text-white hover:bg-white/10';
+      } else {
+        seniorView.classList.add('hidden');
+        caregiverView.classList.remove('hidden');
+        btnCaregiver.className = 'flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-sm sm:text-base transition flex items-center justify-center gap-2 bg-gold text-navy shadow';
+        btnSenior.className = 'flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-sm sm:text-base transition flex items-center justify-center gap-2 text-white hover:bg-white/10';
+        updateCaregiverLockUI();
+      }
+      lucide.createIcons();
+    }
+
+    // Passcode Logic
+    function fillDemoPasscode() {
+      document.getElementById('passcode-input').value = appState.passcode;
+      document.getElementById('passcode-error').classList.add('hidden');
+    }
+
+    function verifyPasscode(e) {
+      e.preventDefault();
+      const entered = document.getElementById('passcode-input').value.trim();
+      if (entered === appState.passcode) {
+        isCaregiverUnlocked = true;
+        document.getElementById('passcode-input').value = '';
+        document.getElementById('passcode-error').classList.add('hidden');
+        updateCaregiverLockUI();
+        showToast('Caregiver Portal Unlocked!', 'success');
+      } else {
+        document.getElementById('passcode-error').classList.remove('hidden');
+      }
+    }
+
+    function lockCaregiverPortal() {
+      isCaregiverUnlocked = false;
+      updateCaregiverLockUI();
+      showToast('Caregiver Portal Locked.', 'info');
+    }
+
+    function updateCaregiverLockUI() {
+      const lockScreen = document.getElementById('caregiver-lock-screen');
+      const dashboard = document.getElementById('caregiver-dashboard');
+      document.getElementById('demo-passcode-hint').textContent = appState.passcode;
+      if (isCaregiverUnlocked) {
+        lockScreen.classList.add('hidden');
+        dashboard.classList.remove('hidden');
+      } else {
+        lockScreen.classList.remove('hidden');
+        dashboard.classList.add('hidden');
+      }
+    }
+
+    function updatePasscode(e) {
+      e.preventDefault();
+      const val = document.getElementById('new-passcode-input').value.trim();
+      if (!/^\d{6}$/.test(val)) {
+        showToast('Passcode must be exactly 6 digits.', 'error');
+        return;
+      }
+      appState.passcode = val;
+      document.getElementById('new-passcode-input').value = '';
+      saveState();
+      showToast(`Security passcode updated to ${val}`, 'success');
+    }
+
+    // Caregiver Tabs
+    function switchCaregiverTab(tabName) {
+      document.querySelectorAll('.cg-tab-panel').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`cg-tab-${tabName}`).classList.remove('hidden');
+
+      document.querySelectorAll('.cg-tab-btn').forEach(btn => {
+        btn.className = 'cg-tab-btn px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap text-slate-600 hover:bg-cream transition flex items-center gap-2';
+      });
+      const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+      activeBtn.className = 'cg-tab-btn px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap bg-navy text-white transition flex items-center gap-2';
+      lucide.createIcons();
+    }
+
+    // Medication Actions
+    function toggleMedTaken(medId) {
+      const med = appState.medications.find(m => m.id === medId);
+      if (!med) return;
+      if (med.status === 'taken') {
+        med.status = 'pending';
+        med.takenAt = null;
+        showToast(`Marked ${med.name} as pending.`, 'info');
+      } else {
+        const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        med.status = 'taken';
+        med.takenAt = nowStr;
+        speakText(`Great job! ${med.name} marked as taken at ${nowStr}.`);
+        showToast(`✓ ${med.name} logged at ${nowStr}!`, 'success');
+      }
+      saveState();
+    }
+
+    function addMedication(e) {
+      e.preventDefault();
+      const newMed = {
+        id: 'med-' + Date.now(),
+        name: document.getElementById('med-name').value.trim(),
+        dosage: document.getElementById('med-dosage').value.trim(),
+        time: document.getElementById('med-time').value.trim(),
+        meal: document.getElementById('med-meal').value,
+        color: document.getElementById('med-color').value,
+        note: document.getElementById('med-note').value.trim() || 'Take with a full glass of water.',
+        status: 'pending',
+        takenAt: null
+      };
+      appState.medications.push(newMed);
+      e.target.reset();
+      saveState();
+      showToast(`Added ${newMed.name} to schedule!`, 'success');
+    }
+
+    function deleteMedication(medId) {
+      appState.medications = appState.medications.filter(m => m.id !== medId);
+      saveState();
+      showToast('Medication removed from schedule.', 'info');
+    }
+
+    function resetDailyStatuses() {
+      appState.medications.forEach(m => {
+        m.status = 'pending';
+        m.takenAt = null;
+      });
+      saveState();
+      showToast('All daily doses reset to Pending.', 'info');
+    }
+
+    // Appointment Actions
+    function addAppointment(e) {
+      e.preventDefault();
+      const newApt = {
+        id: 'apt-' + Date.now(),
+        doctor: document.getElementById('apt-doctor').value.trim(),
+        specialty: document.getElementById('apt-specialty').value.trim(),
+        clinic: document.getElementById('apt-clinic').value.trim(),
+        date: document.getElementById('apt-date').value.trim(),
+        time: document.getElementById('apt-time').value.trim(),
+        notes: document.getElementById('apt-notes').value.trim() || 'Bring previous medical file.'
+      };
+      appState.appointments.push(newApt);
+
+      // Automatically log an appointment confirmation email
+      appState.emailLogs.unshift({
+        id: 'mail-' + Date.now(),
+        type: 'appointment',
+        subject: `📅 New Appointment Scheduled: ${newApt.doctor} (${newApt.date})`,
+        recipient: appState.caregiverEmails[0] || 'likitha.family@caresync.demo',
+        timestamp: 'Just now',
+        body: `Hello Caregiver,\n\nA new doctor appointment has been added to Mrs. Kamala Devi's CareSync profile:\n\n• Doctor: ${newApt.doctor} (${newApt.specialty})\n• Clinic: ${newApt.clinic}\n• Date & Time: ${newApt.date} at ${newApt.time}\n• Notes: ${newApt.notes}`
+      });
+
+      e.target.reset();
+      saveState();
+      showToast('Appointment scheduled & email reminder queued!', 'success');
+    }
+
+    function deleteAppointment(aptId) {
+      appState.appointments = appState.appointments.filter(a => a.id !== aptId);
+      saveState();
+      showToast('Appointment removed.', 'info');
+    }
+
+    // Email & SOS Simulators
+    function addCaregiverEmail(e) {
+      e.preventDefault();
+      const input = document.getElementById('new-caregiver-email');
+      const email = input.value.trim();
+      if (email && !appState.caregiverEmails.includes(email)) {
+        appState.caregiverEmails.push(email);
+        input.value = '';
+        saveState();
+        showToast(`Added ${email} to alert recipients.`, 'success');
+      }
+    }
+
+    function removeCaregiverEmail(email) {
+      if (appState.caregiverEmails.length <= 1) {
+        showToast('At least one caregiver email must remain active.', 'error');
+        return;
+      }
+      appState.caregiverEmails = appState.caregiverEmails.filter(e => e !== email);
+      saveState();
+    }
+
+    function simulateMissedDoseAlert() {
+      const pendingMed = appState.medications.find(m => m.status === 'pending') || appState.medications[0];
+      const medName = pendingMed ? `${pendingMed.name} (${pendingMed.time})` : 'Afternoon Medication';
+      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      const newLog = {
+        id: 'mail-' + Date.now(),
+        type: 'missed',
+        subject: `🚨 MISSED DOSE ALERT: Mrs. Kamala Devi — ${medName}`,
+        recipient: appState.caregiverEmails.join(', '),
+        timestamp: `Today, ${nowStr}`,
+        body: `URGENT CAREGIVER NOTIFICATION\n\nPatient: Mrs. Kamala Devi (Age 74)\nMissed Medication: ${medName}\nScheduled Window: ${pendingMed ? pendingMed.meal : 'Scheduled Today'}\n\nMrs. Kamala Devi has not confirmed taking this medication within 30 minutes of the scheduled time. Please call her or check in via CareSync AI.`
+      };
+
+      appState.emailLogs.unshift(newLog);
+      saveState();
+      showToast(`🚨 Missed Dose Email Alert sent to ${appState.caregiverEmails[0]}!`, 'error');
+      openEmailModal(newLog.id);
+    }
+
+    function simulateUpcomingReminder() {
+      const med = appState.medications[appState.medications.length - 1];
+      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const newLog = {
+        id: 'mail-' + Date.now(),
+        type: 'upcoming',
+        subject: `⏰ Upcoming Dose Reminder: ${med ? med.name : 'Evening Tablet'}`,
+        recipient: appState.caregiverEmails.join(', '),
+        timestamp: `Today, ${nowStr}`,
+        body: `Hello Caregiver,\n\nUpcoming dose alert for Mrs. Kamala Devi:\n• Medicine: ${med ? med.name : 'Vitamin D3 60K'}\n• Dosage: ${med ? med.dosage : '1 Tablet'}\n• Instructions: ${med ? med.meal : 'After Meal'}`
+      };
+      appState.emailLogs.unshift(newLog);
+      saveState();
+      showToast('Upcoming dose reminder email dispatched!', 'success');
+      openEmailModal(newLog.id);
+    }
+
+    function triggerEmergencySOS() {
+      const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('sos-timestamp').textContent = `Triggered Today at ${nowStr}`;
+      const modal = document.getElementById('sos-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      appState.emailLogs.unshift({
+        id: 'mail-' + Date.now(),
+        type: 'sos',
+        subject: `🆘 EMERGENCY SOS TRIGGERED by Mrs. Kamala Devi (${nowStr})`,
+        recipient: appState.caregiverEmails.join(', '),
+        timestamp: `Today, ${nowStr}`,
+        body: `CRITICAL EMERGENCY ALERT!\n\nMrs. Kamala Devi pressed the Emergency SOS button on her Senior Care screen at ${nowStr}.\n\nRegistered Location: Home — Jubilee Hills, Hyderabad\nImmediate telephone follow-up is recommended.`
+      });
+      saveState();
+      speakText('Emergency alert sent to your daughter Likitha. Please stay calm. Help is on the way.');
+    }
+
+    function closeSosModal() {
+      const modal = document.getElementById('sos-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function openEmailModal(logId) {
+      const log = appState.emailLogs.find(l => l.id === logId);
+      if (!log) return;
+      const badgeColor = log.type === 'missed' || log.type === 'sos' ? 'bg-coralLight text-coral' : 'bg-sageLight text-sage';
+      document.getElementById('email-modal-body').innerHTML = `
+        <div class="border-b border-slate-200 pb-4 space-y-2">
+          <span class="inline-block px-3 py-1 rounded-full text-xs font-extrabold uppercase ${badgeColor}">
+            ${log.type === 'sos' ? 'Emergency SOS Dispatch' : log.type === 'missed' ? 'Missed Medication Alert' : 'Proactive Schedule Reminder'}
+          </span>
+          <h4 class="font-display text-xl font-extrabold text-navy">${log.subject}</h4>
+          <div class="text-xs text-slate-500 space-y-0.5">
+            <div><strong>From:</strong> CareSync AI Alert Engine &lt;alerts@caresync-ai.health&gt;</div>
+            <div><strong>To:</strong> ${log.recipient}</div>
+            <div><strong>Sent:</strong> ${log.timestamp}</div>
+          </div>
+        </div>
+        <pre class="whitespace-pre-wrap font-sans text-sm text-slate-700 bg-cream p-4 rounded-2xl border border-slate-200 leading-relaxed">${log.body}</pre>
+      `;
+      const modal = document.getElementById('email-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeEmailModal() {
+      const modal = document.getElementById('email-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // Senior TTS & AI Helper
+    function readDailySummary() {
+      const taken = appState.medications.filter(m => m.status === 'taken').length;
+      const total = appState.medications.length;
+      const pending = appState.medications.filter(m => m.status === 'pending');
+      let speech = `Namaste Mrs. Kamala Devi. You have taken ${taken} out of ${total} medications today. `;
+      if (pending.length > 0) {
+        speech += `Your next medicine is ${pending[0].name}, ${pending[0].dosage}, scheduled for ${pending[0].time}, ${pending[0].meal}.`;
+      } else {
+        speech += `Wonderful! You have completed all your medications for today.`;
+      }
+      speakText(speech);
+    }
+
+    function readAppointmentsAloud() {
+      if (appState.appointments.length === 0) {
+        speakText('You have no upcoming doctor appointments scheduled.');
+        return;
+      }
+      const next = appState.appointments[0];
+      speakText(`Your next doctor visit is with ${next.doctor}, ${next.specialty}, on ${next.date} at ${next.time}, at ${next.clinic}.`);
+    }
+
+    function askSeniorAI(question) {
+      const q = question.toLowerCase();
+      let answer = '';
+      if (q.includes('milk') || q.includes('metformin')) {
+        answer = 'Yes, you can take Metformin 500mg right after your breakfast even if you had milk or tea. Taking it with food helps prevent any stomach upset.';
+      } else if (q.includes('missed') || q.includes('forgot')) {
+        answer = 'If you missed a morning pill by just 1 or 2 hours, you can take it now with a snack. If it is already close to your next dose, skip the missed one—never take two tablets together. I have also notified Likitha so she can guide you.';
+      } else if (q.includes('prescription') || q.includes('explain')) {
+        answer = 'Here is your simple daily plan: 1) Metformin in the morning keeps your sugar balanced. 2) Amlodipine in the morning keeps your blood pressure calm. 3) Vitamin D3 after lunch keeps your bones strong.';
+      } else {
+        answer = `For "${question}": Please take your tablets with a full glass of plain water after meals as scheduled. If you feel dizzy or unwell, tap the red Emergency SOS button to alert Likitha right away.`;
+      }
+      document.getElementById('senior-ai-response-text').textContent = answer;
+      speakText(answer);
+    }
+
+    function handleSeniorCustomAsk(e) {
+      e.preventDefault();
+      const input = document.getElementById('senior-ai-input');
+      if (!input.value.trim()) return;
+      askSeniorAI(input.value.trim());
+      input.value = '';
+    }
+
+    // Caregiver AI Tools
+    function runInteractionCheck() {
+      const med = document.getElementById('ai-check-med').value;
+      const item = document.getElementById('ai-check-item').value;
+      const box = document.getElementById('ai-interaction-result');
+
+      let advice = '';
+      if (med.includes('Amlodipine') && item.includes('Grapefruit')) {
+        advice = '⚠️ <strong>Moderate Caution:</strong> Large amounts of grapefruit juice may slightly increase Amlodipine levels in the bloodstream, potentially causing mild dizziness or lower blood pressure. Prefer plain water or sweet lime instead.';
+      } else if (med.includes('Vitamin D3') && item.includes('High-Fat')) {
+        advice = '✅ <strong>Beneficial Pairing:</strong> Vitamin D3 is fat-soluble! Taking it after a balanced meal containing healthy fats improves absorption by up to 30%.';
+      } else if (med.includes('Metformin') && item.includes('Milk')) {
+        advice = '✅ <strong>Safe Combination:</strong> Milk and dairy do not negatively affect Metformin absorption. Taking Metformin with meals reduces gastrointestinal discomfort.';
+      } else {
+        advice = `✅ <strong>No Major Interaction Flagged:</strong> ${med} can generally be taken safely alongside ${item}. Maintain at least a 30-minute gap from herbal teas for optimal absorption.`;
+      }
+      box.innerHTML = advice;
+    }
+
+    function simplifyClinicalNote() {
+      const note = document.getElementById('clinical-note-input').value.trim();
+      const out = document.getElementById('simplified-note-output');
+      if (!note) return;
+      out.innerHTML = `
+        <div class="font-bold text-sage mb-1.5">✓ Plain-Language Summary Ready for Senior:</div>
+        <ul class="list-disc pl-5 space-y-1 text-navy">
+          <li><strong>Good News:</strong> Blood pressure (128/82) and blood sugar levels are well controlled.</li>
+          <li><strong>Morning Routine:</strong> Keep taking your sugar tablet (Metformin) and blood pressure tablet (Amlodipine) after breakfast.</li>
+          <li><strong>Weekly Boost:</strong> Continue your Vitamin D3 capsule once a week after lunch.</li>
+          <li><strong>Next Checkup:</strong> Routine cholesterol blood test in 4 weeks.</li>
+        </ul>
+      `;
+      showToast('Doctor notes translated into simple senior summary!', 'success');
+    }
+
+    // Master Render Function
+    function renderAll() {
+      const takenCount = appState.medications.filter(m => m.status === 'taken').length;
+      const totalCount = appState.medications.length;
+      const pendingCount = totalCount - takenCount;
+      const rate = totalCount > 0 ? Math.round((takenCount / totalCount) * 100) : 100;
+
+      // Update Senior Banner
+      document.getElementById('senior-progress-text').textContent =
+        takenCount === totalCount && totalCount > 0
+          ? `Wonderful! You have taken all ${totalCount} medications today.`
+          : `You have taken ${takenCount} of ${totalCount} medications today. Keep going!`;
+      document.getElementById('senior-med-badge').textContent = `${takenCount}/${totalCount} Completed`;
+
+      // Render Senior Medication Cards
+      const pillStyles = {
+        blue: { bg: 'bg-blue-100 text-blue-800 border-blue-300', dot: 'bg-blue-600' },
+        amber: { bg: 'bg-amber-100 text-amber-900 border-amber-300', dot: 'bg-amber-500' },
+        emerald: { bg: 'bg-emerald-100 text-emerald-900 border-emerald-300', dot: 'bg-emerald-600' },
+        rose: { bg: 'bg-rose-100 text-rose-900 border-rose-300', dot: 'bg-rose-600' }
+      };
+
+      const seniorMedList = document.getElementById('senior-med-list');
+      seniorMedList.innerHTML = appState.medications.map(med => {
+        const isTaken = med.status === 'taken';
+        const style = pillStyles[med.color] || pillStyles.blue;
+        return `
+          <div class="rounded-3xl p-6 border-2 transition-all flex flex-col justify-between shadow-sm ${isTaken ? 'bg-sageLight/40 border-sage' : 'bg-white border-slate-300'}">
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-4">
+                <span class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-sm font-extrabold border ${style.bg}">
+                  <span class="w-3 h-3 rounded-full ${style.dot}"></span>
+                  ${med.time}
+                </span>
+                <button onclick="speakText('Take ${med.name}, ${med.dosage}, at ${med.time}, ${med.meal}. ${med.note}')" class="p-3 rounded-2xl bg-cream hover:bg-goldLight border border-slate-300 text-navy transition" title="Read Medication Aloud">
+                  <i data-lucide="volume-2" class="w-6 h-6"></i>
+                </button>
+              </div>
+
+              <h4 class="font-display text-2xl font-extrabold text-navy mb-1">${med.name}</h4>
+              <div class="text-lg font-bold text-slate-700 mb-2">${med.dosage} &bull; <span class="text-navy">${med.meal}</span></div>
+              <p class="text-base text-slate-600 bg-cream/80 p-3.5 rounded-2xl border border-slate-200/80 mb-5 leading-relaxed">
+                ${med.note}
+              </p>
+            </div>
+
+            ${
+              isTaken
+                ? `<div class="space-y-2">
+                    <div class="w-full py-4 px-5 rounded-2xl bg-sage text-white font-extrabold text-lg flex items-center justify-center gap-2 shadow">
+                      <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                      <span>Taken at ${med.takenAt}</span>
+                    </div>
+                    <button onclick="toggleMedTaken('${med.id}')" class="w-full py-2 text-sm font-bold text-slate-500 hover:text-navy underline">
+                      Undo (Mark as Not Taken)
+                    </button>
+                  </div>`
+                : `<button onclick="toggleMedTaken('${med.id}')" class="w-full py-5 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-extrabold text-xl shadow-lg transition flex items-center justify-center gap-3">
+                    <i data-lucide="check" class="w-7 h-7 stroke-[3]"></i>
+                    <span>I Took My Meds</span>
+                  </button>`
+            }
+          </div>
+        `;
+      }).join('');
+
+      // Render Senior Appointments
+      const seniorAptList = document.getElementById('senior-appointments-list');
+      seniorAptList.innerHTML = appState.appointments.map(apt => `
+        <div class="p-4 rounded-2xl bg-cream border border-slate-200 space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-navy text-gold">${apt.date} &bull; ${apt.time}</span>
+            <span class="text-xs font-bold text-slate-500">${apt.specialty}</span>
+          </div>
+          <div class="font-display text-xl font-extrabold text-navy">${apt.doctor}</div>
+          <div class="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+            <i data-lucide="map-pin" class="w-4 h-4 text-coral shrink-0"></i> ${apt.clinic}
+          </div>
+          <p class="text-sm text-slate-600 pt-1">${apt.notes}</p>
+        </div>
+      `).join('');
+
+      // Update Caregiver KPIs
+      document.getElementById('kpi-adherence-rate').textContent = `${rate}%`;
+      document.getElementById('kpi-adherence-bar').style.width = `${rate}%`;
+      document.getElementById('kpi-taken-count').textContent = takenCount;
+      document.getElementById('kpi-pending-count').textContent = pendingCount;
+      document.getElementById('kpi-emails-count').textContent = appState.emailLogs.length;
+      document.getElementById('alert-count-badge').textContent = appState.emailLogs.length;
+
+      // Render Caregiver Audit Log Table
+      document.getElementById('cg-audit-table-body').innerHTML = appState.medications.map(med => `
+        <tr class="hover:bg-cream/50">
+          <td class="py-4 px-6 font-bold text-navy">${med.name}</td>
+          <td class="py-4 px-6 text-slate-600">${med.dosage} (${med.time})</td>
+          <td class="py-4 px-6 text-slate-600">${med.meal}</td>
+          <td class="py-4 px-6">
+            ${
+              med.status === 'taken'
+                ? '<span class="px-3 py-1 rounded-full text-xs font-extrabold bg-sageLight text-sage">✓ Taken</span>'
+                : '<span class="px-3 py-1 rounded-full text-xs font-extrabold bg-goldLight text-amber-900">⏳ Pending</span>'
+            }
+          </td>
+          <td class="py-4 px-6 font-medium text-slate-600">${med.takenAt || '—'}</td>
+        </tr>
+      `).join('');
+
+      // Render Caregiver Med Management List
+      document.getElementById('cg-med-list').innerHTML = appState.medications.map(med => `
+        <div class="p-4 rounded-2xl bg-cream border border-slate-200 flex items-center justify-between gap-4">
+          <div>
+            <div class="font-bold text-navy text-base">${med.name} <span class="text-xs font-semibold text-slate-500">(${med.dosage})</span></div>
+            <div class="text-xs text-slate-600 mt-0.5">${med.time} &bull; ${med.meal} &bull; <em>${med.note}</em></div>
+          </div>
+          <button onclick="deleteMedication('${med.id}')" class="p-2.5 rounded-xl bg-white hover:bg-coralLight text-coral border border-slate-200 transition" title="Delete Medication">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </div>
+      `).join('');
+
+      // Render Caregiver Appointments List
+      document.getElementById('cg-appointments-list').innerHTML = appState.appointments.map(apt => `
+        <div class="p-4 rounded-2xl bg-cream border border-slate-200 flex items-start justify-between gap-4">
+          <div>
+            <div class="font-bold text-navy text-base">${apt.doctor} <span class="text-xs font-semibold text-gold bg-navy px-2 py-0.5 rounded-md ml-1">${apt.specialty}</span></div>
+            <div class="text-xs font-semibold text-slate-700 mt-1">${apt.date} at ${apt.time} &bull; ${apt.clinic}</div>
+            <div class="text-xs text-slate-500 mt-1">${apt.notes}</div>
+          </div>
+          <button onclick="deleteAppointment('${apt.id}')" class="p-2.5 rounded-xl bg-white hover:bg-coralLight text-coral border border-slate-200 transition shrink-0" title="Remove Appointment">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </div>
+      `).join('');
+
+      // Render Caregiver Email Recipients
+      document.getElementById('caregiver-emails-list').innerHTML = appState.caregiverEmails.map(email => `
+        <div class="flex items-center justify-between px-3.5 py-2 rounded-xl bg-cream border border-slate-200 text-xs font-semibold text-navy">
+          <span class="truncate">${email}</span>
+          <button onclick="removeCaregiverEmail('${email}')" class="text-slate-400 hover:text-coral ml-2">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      `).join('');
+
+      // Render Email Alert Logs
+      document.getElementById('email-logs-list').innerHTML = appState.emailLogs.map(log => {
+        const isUrgent = log.type === 'missed' || log.type === 'sos';
+        return `
+          <div onclick="openEmailModal('${log.id}')" class="cursor-pointer p-4 rounded-2xl border transition hover:shadow-md ${isUrgent ? 'bg-coralLight/30 border-coral/40' : 'bg-cream border-slate-200'}">
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <span class="text-xs font-extrabold uppercase ${isUrgent ? 'text-coral' : 'text-sage'}">
+                ${log.type === 'sos' ? '🆘 Emergency SOS' : log.type === 'missed' ? '🚨 Missed Dose Alert' : '⏰ Automated Reminder'}
+              </span>
+              <span class="text-xs text-slate-500 font-medium">${log.timestamp}</span>
+            </div>
+            <div class="font-bold text-navy text-sm">${log.subject}</div>
+            <div class="text-xs text-slate-500 mt-1 truncate">To: ${log.recipient}</div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    // Initialize on Load
+    window.addEventListener('DOMContentLoaded', () => {
+      const today = new Date();
+      document.getElementById('senior-live-date').textContent = today.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      renderAll();
+    });
+  </script>
+</body>
+</html>
